@@ -1,0 +1,49 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  timeFormat   String   @default("12h") // "12h" | "24h"
+  theme        String   @default("system") // "light" | "dark" | "system"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  attendances Attendance[]
+  schedule    WorkSchedule?
+}
+
+model WorkSchedule {
+  id                   String   @id @default(cuid())
+  userId               String   @unique
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expectedDailyMinutes Int      @default(540)
+  breakMinutes         Int      @default(60)
+  workStartMinutes     Int      @default(540)
+  workEndMinutes       Int      @default(1140)
+  workingDays          String   @default("0,1,2,3,4")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Attendance {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime
+  entryMinutes Int?
+  outMinutes   Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@index([userId, date])
+}
