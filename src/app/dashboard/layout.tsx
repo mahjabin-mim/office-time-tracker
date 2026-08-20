@@ -2,6 +2,7 @@ import { requireCurrentUser } from "@/lib/data";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { MobileNav } from "@/components/dashboard/MobileNav";
 import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
+import { InstallAppButton } from "@/components/dashboard/InstallAppButton";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireCurrentUser();
@@ -14,6 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
           <MobileNav />
           <div className="ml-auto flex items-center gap-3">
+            <InstallAppButton />
             <ThemeToggle />
             <div className="flex items-center gap-2 rounded-full border border-border bg-card px-1.5 py-1 pr-3">
               <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
