@@ -5,7 +5,7 @@ Track daily office entry/out times and see your monthly worked-time balance at a
 ## Tech stack
 
 - Next.js 15 (App Router) + React 19
-- Prisma + SQLite (local dev) / PostgreSQL (production)
+- Prisma + PostgreSQL
 - Tailwind CSS
 - Manual auth (bcryptjs + jose signed session cookies)
 - Installable PWA (manifest, service worker, offline page)
@@ -29,12 +29,7 @@ Track daily office entry/out times and see your monthly worked-time balance at a
    cp .env.example .env
    ```
 
-   For local development, set `DATABASE_URL` to a SQLite file instead of the Postgres URL in the example:
-
-   ```
-   DATABASE_URL="file:./dev.db"
-   SESSION_SECRET="any-long-random-string"
-   ```
+   Set `DATABASE_URL` to your Postgres connection string (e.g. from a free Neon or Supabase database), and set `SESSION_SECRET` to a random string.
 
    Generate a strong `SESSION_SECRET` with:
 
@@ -69,4 +64,4 @@ Track daily office entry/out times and see your monthly worked-time balance at a
 
 ## Deployment
 
-Production deploys use PostgreSQL rather than SQLite (SQLite's local file doesn't persist on serverless platforms like Vercel). Point `DATABASE_URL` at a hosted Postgres instance (e.g. Neon, Supabase) and set `prisma/schema.prisma`'s datasource `provider` to `postgresql` before deploying.
+Deployed on Vercel with a Neon Postgres database. `DATABASE_URL` and `SESSION_SECRET` are set as environment variables on the Vercel project.
