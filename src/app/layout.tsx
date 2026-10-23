@@ -16,9 +16,6 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
     title: "Time Tracker",
   },
-  icons: {
-    apple: "/apple-touch-icon.png",
-  },
   // Older iOS versions only open home-screen apps full screen with Apple's original tag.
   other: { "apple-mobile-web-app-capable": "yes" },
 };

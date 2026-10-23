@@ -1,4 +1,5 @@
-const CACHE_NAME = "ott-cache-v1";
+// Bump when cached assets (e.g. icons) change so old copies are dropped on activate.
+const CACHE_NAME = "ott-cache-v2";
 const OFFLINE_URL = "/offline";
 const PRECACHE_URLS = [OFFLINE_URL, "/icons/icon-192.png", "/icons/icon-512.png"];
 const IS_LOCAL = ["localhost", "127.0.0.1"].includes(self.location.hostname);
