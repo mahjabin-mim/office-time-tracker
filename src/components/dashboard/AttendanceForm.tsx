@@ -116,25 +116,25 @@ export function AttendanceForm({
             />
           </div>
 
-          {row.isWorkingDay ? (
-            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-input px-3.5 py-3 transition-colors hover:bg-muted/50 has-[:checked]:border-sky-500/50 has-[:checked]:bg-sky-500/10">
-              <input
-                type="checkbox"
-                name="isHalfDay"
-                defaultChecked={row.isHalfDay}
-                className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-brand-600"
-              />
-              <span>
-                <span className="block text-sm font-medium">Half day</span>
-                <span className="block text-xs text-muted-foreground">
-                  Expected working time is {minutesToDuration(halfDayMinutes)}, with no break
-                  deducted.
-                </span>
+          <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-input px-3.5 py-3 transition-colors hover:bg-muted/50 has-[:checked]:border-sky-500/50 has-[:checked]:bg-sky-500/10">
+            <input
+              type="checkbox"
+              name="isHalfDay"
+              defaultChecked={row.isHalfDay}
+              className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-brand-600"
+            />
+            <span>
+              <span className="block text-sm font-medium">Half day</span>
+              <span className="block text-xs text-muted-foreground">
+                Expected working time is {minutesToDuration(halfDayMinutes)}, with no break
+                deducted.
               </span>
-            </label>
-          ) : (
+            </span>
+          </label>
+          {!row.isScheduledWorkingDay && (
             <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-2.5 text-xs text-amber-700 dark:text-amber-300">
-              This is one of your days off, so every minute you work counts as extra time.
+              This is a day off in your schedule, so all time worked counts as extra. Tick Half day
+              if it was a half working day instead.
             </p>
           )}
         </div>
