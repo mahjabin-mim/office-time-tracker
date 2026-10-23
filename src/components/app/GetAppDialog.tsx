@@ -17,7 +17,7 @@ function AndroidSection({ highlight }: { highlight: boolean }) {
         <Smartphone className="h-4 w-4 text-brand-600 dark:text-brand-400" /> Android
       </h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Install the app (about 1 MB). Needs Android 7 or newer.
+        Install the app (about 2 MB). Needs Android 7 or newer.
       </p>
       <a
         href={ANDROID_APP_URL}
