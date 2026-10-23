@@ -1,11 +1,9 @@
 import "server-only";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
+import { getSessionSecret } from "@/lib/session-secret";
 
 const SESSION_COOKIE = "ott_session";
-const secret = new TextEncoder().encode(
-  process.env.SESSION_SECRET ?? "dev-only-secret-change-me-please-32-bytes-min"
-);
 
 const REMEMBER_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const DEFAULT_MAX_AGE = 60 * 60 * 24; // 1 day
@@ -20,7 +18,7 @@ export async function createSession(userId: string, remember: boolean) {
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + maxAge)
-    .sign(secret);
+    .sign(getSessionSecret());
 
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, token, {
@@ -37,7 +35,7 @@ export async function getSession(): Promise<SessionPayload | null> {
   const token = cookieStore.get(SESSION_COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, secret);
+    const { payload } = await jwtVerify(token, getSessionSecret());
     if (typeof payload.userId !== "string") return null;
     return { userId: payload.userId };
   } catch {

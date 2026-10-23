@@ -26,7 +26,7 @@ export function ScheduleForm({ schedule }: { schedule: WorkSchedule }) {
     <form action={formAction} className="space-y-5">
       {state?.success && <Alert variant="success">Working schedule updated.</Alert>}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <Label htmlFor="expectedDailyHours">Expected daily hours</Label>
           <Input
@@ -41,7 +41,7 @@ export function ScheduleForm({ schedule }: { schedule: WorkSchedule }) {
           <FieldError>{state?.fieldErrors?.expectedDailyMinutes}</FieldError>
         </div>
         <div>
-          <Label htmlFor="breakMinutes">Break duration (minutes)</Label>
+          <Label htmlFor="breakMinutes">Break (minutes)</Label>
           <Input
             id="breakMinutes"
             name="breakMinutes"
@@ -53,6 +53,25 @@ export function ScheduleForm({ schedule }: { schedule: WorkSchedule }) {
           />
           <FieldError>{state?.fieldErrors?.breakMinutes}</FieldError>
         </div>
+        <div>
+          <Label htmlFor="halfDayHours">Half-day hours</Label>
+          <Input
+            id="halfDayHours"
+            name="halfDayHours"
+            type="number"
+            step={0.25}
+            min={0.5}
+            max={24}
+            defaultValue={schedule.halfDayMinutes / 60}
+          />
+          <p className="mt-1.5 text-xs text-muted-foreground">
+            Expected time on days you tick &ldquo;Half day&rdquo;. No break is deducted.
+          </p>
+          <FieldError>{state?.fieldErrors?.halfDayMinutes}</FieldError>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <Label htmlFor="workStart">Work start time</Label>
           <Input

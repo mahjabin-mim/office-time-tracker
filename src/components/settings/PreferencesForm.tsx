@@ -10,9 +10,11 @@ import { cn } from "@/lib/cn";
 export function PreferencesForm({
   theme,
   timeFormat,
+  timezone,
 }: {
   theme: string;
   timeFormat: string;
+  timezone: string | null;
 }) {
   const [state, formAction] = useActionState(updatePreferencesAction, null);
 
@@ -53,6 +55,20 @@ export function PreferencesForm({
           { value: "12h", label: "12-hour" },
           { value: "24h", label: "24-hour" },
         ]} />
+      </div>
+
+      <div>
+        <Label>Time zone</Label>
+        <p className="text-sm text-muted-foreground">
+          {timezone ? (
+            <>
+              <span className="font-medium text-foreground">{timezone.replace(/_/g, " ")}</span>
+              {" "}· detected from your device
+            </>
+          ) : (
+            "Detecting from your device…"
+          )}
+        </p>
       </div>
 
       <SubmitButton pendingLabel="Saving…">Save preferences</SubmitButton>

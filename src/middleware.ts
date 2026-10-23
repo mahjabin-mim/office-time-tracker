@@ -1,16 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
+import { getSessionSecret } from "@/lib/session-secret";
 
 const SESSION_COOKIE = "ott_session";
-const secret = new TextEncoder().encode(
-  process.env.SESSION_SECRET ?? "dev-only-secret-change-me-please-32-bytes-min"
-);
 
 async function isAuthenticated(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return false;
   try {
-    await jwtVerify(token, secret);
+    await jwtVerify(token, getSessionSecret());
     return true;
   } catch {
     return false;

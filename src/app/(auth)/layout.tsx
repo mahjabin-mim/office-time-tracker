@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
       <div className="relative z-10 w-full max-w-md">
         <div className="mb-8 flex flex-col items-center gap-3 text-center">
-          <div className="flex h-12 w-12 animate-glow-pulse items-center justify-center rounded-2xl bg-brand-600 text-white">
+          <div className="bg-brand-gradient flex h-12 w-12 animate-glow-pulse items-center justify-center rounded-2xl text-white">
             <Clock3 className="h-6 w-6" />
           </div>
           <div>

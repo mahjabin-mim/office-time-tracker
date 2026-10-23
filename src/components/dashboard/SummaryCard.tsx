@@ -18,10 +18,12 @@ export function SummaryCard({
   return (
     <Card
       className={cn(
-        "p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-glow",
+        "group relative overflow-hidden p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-lift",
         className
       )}
     >
+      {/* Accent line that sweeps in on hover */}
+      <span className="bg-brand-gradient absolute inset-x-0 top-0 h-0.5 origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100" />
       <p className="text-sm font-medium text-muted-foreground">{label}</p>
       <p
         className={cn(

@@ -4,10 +4,11 @@ import {
   getMonthRows,
   getOrCreateSchedule,
   getRecentRows,
+  getUserNow,
   requireCurrentUser,
-  summarizeMonth,
+  summarizeRows,
 } from "@/lib/data";
-import { toDateKey } from "@/lib/time";
+import { formatDayLabel } from "@/lib/time";
 import { TodayCard } from "@/components/dashboard/TodayCard";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { RecentAttendanceList } from "@/components/dashboard/RecentAttendanceList";
@@ -19,25 +20,24 @@ export default async function DashboardPage() {
   const schedule = await getOrCreateSchedule(user.id);
   const timeFormat = user.timeFormat as "12h" | "24h";
 
-  const now = new Date();
-  const monthRows = await getMonthRows(user, schedule, now.getFullYear(), now.getMonth());
-  const summary = summarizeMonth(monthRows);
+  const now = getUserNow(user);
+  const monthRows = await getMonthRows(user, schedule, now.year, now.month);
+  const summary = summarizeRows(monthRows);
   const recentRows = await getRecentRows(user, schedule, 10);
+  const todayRow = monthRows.find((r) => r.isToday)!;
 
-  const todayKey = toDateKey(now);
-  const todayRow = monthRows.find((r) => r.dateKey === todayKey)!;
-
-  const hour = now.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const greeting =
+    now.hour < 12 ? "Good morning" : now.hour < 18 ? "Good afternoon" : "Good evening";
 
   return (
     <div className="space-y-8">
       <Reveal>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          {greeting}, {user.name} 👋
+          {greeting}, <span className="text-gradient">{user.name}</span>{" "}
+          <span className="inline-block origin-[70%_70%] animate-wave">👋</span>
         </h1>
         <p className="mt-1 text-muted-foreground">
-          {now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+          {formatDayLabel(now.date)}
         </p>
       </Reveal>
 
@@ -45,14 +45,11 @@ export default async function DashboardPage() {
         <SectionHeading title="Today's Time" />
         <Reveal delay={0.05}>
           <TodayCard
-            today={now}
-            entryMinutes={todayRow.entryMinutes}
-            outMinutes={todayRow.outMinutes}
-            status={todayRow.status}
-            workedMinutes={todayRow.workedMinutes}
-            expectedMinutes={todayRow.expectedMinutes}
-            differenceMinutes={todayRow.differenceMinutes}
+            row={todayRow}
             timeFormat={timeFormat}
+            halfDayMinutes={schedule.halfDayMinutes}
+            nowMinutes={now.minutes}
+            remindLeave={user.remindLeave}
           />
         </Reveal>
       </section>
@@ -84,7 +81,7 @@ export default async function DashboardPage() {
             <SummaryCard
               label="Total worked"
               value={<AnimatedNumber value={summary.totalWorkedMinutes} format="duration" />}
-              hint={`${summary.daysCompletedCount} days completed`}
+              hint={`${summary.daysCompletedCount + summary.daysOffWorkedCount} days completed`}
             />
           </Reveal>
           <Reveal delay={0.2}>

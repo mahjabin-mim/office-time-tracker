@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.officetimetracker.twa",
+      "sha256_cert_fingerprints": [
+        "08:F9:7B:70:82:80:83:68:61:A7:CF:E8:CA:3D:65:83:3A:31:AA:1B:65:A1:82:DA:52:36:85:66:05:6D:29:45"
+      ]
+    }
+  }
+]

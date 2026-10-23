@@ -2,10 +2,12 @@
 
 import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/session";
-import { clockToMinutes } from "@/lib/time";
+import { destroySession, getSession } from "@/lib/session";
+import { clockToMinutes, isValidTimeZone } from "@/lib/time";
 import {
+  deleteAccountSchema,
   passwordChangeSchema,
   preferencesSchema,
   profileSchema,
@@ -37,6 +39,7 @@ export async function updateScheduleAction(
   const parsed = scheduleSchema.safeParse({
     expectedDailyMinutes: Number(formData.get("expectedDailyHours")) * 60,
     breakMinutes: Number(formData.get("breakMinutes")),
+    halfDayMinutes: Math.round(Number(formData.get("halfDayHours")) * 60),
     workStartMinutes: clockToMinutes(workStartRaw) ?? 540,
     workEndMinutes: clockToMinutes(workEndRaw) ?? 1020,
     workingDays,
@@ -59,6 +62,39 @@ export async function updateScheduleAction(
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/monthly");
+  revalidatePath("/dashboard/yearly");
+  revalidatePath("/dashboard/settings");
+  return { success: true };
+}
+
+/** Saves the time zone reported by the browser; returns whether anything changed. */
+export async function updateTimezoneAction(timezone: string): Promise<boolean> {
+  const userId = await requireUserId();
+  if (!timezone || !isValidTimeZone(timezone)) return false;
+
+  const user = await db.user.findUnique({ where: { id: userId }, select: { timezone: true } });
+  if (!user || user.timezone === timezone) return false;
+
+  await db.user.update({ where: { id: userId }, data: { timezone } });
+  return true;
+}
+
+export async function updateReminderPrefsAction(
+  _prevState: SettingsFormState,
+  formData: FormData
+): Promise<SettingsFormState> {
+  const userId = await requireUserId();
+
+  await db.user.update({
+    where: { id: userId },
+    data: {
+      remindClockIn: formData.get("remindClockIn") === "on",
+      remindLeave: formData.get("remindLeave") === "on",
+      remindClockOut: formData.get("remindClockOut") === "on",
+    },
+  });
+
+  revalidatePath("/dashboard");
   revalidatePath("/dashboard/settings");
   return { success: true };
 }
@@ -122,15 +158,71 @@ export async function changePasswordAction(
   const user = await db.user.findUnique({ where: { id: userId } });
   if (!user) return { error: "User not found" };
 
-  const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
-  if (!valid) {
-    return { fieldErrors: { currentPassword: "Current password is incorrect" } };
+  // Google-only accounts have no password yet, so there's nothing to verify.
+  if (user.passwordHash) {
+    if (!parsed.data.currentPassword) {
+      return { fieldErrors: { currentPassword: "Current password is required" } };
+    }
+    const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
+    if (!valid) {
+      return { fieldErrors: { currentPassword: "Current password is incorrect" } };
+    }
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
   await db.user.update({ where: { id: userId }, data: { passwordHash } });
 
+  revalidatePath("/dashboard/settings");
   return { success: true };
+}
+
+export async function disconnectGoogleAction(): Promise<SettingsFormState> {
+  const userId = await requireUserId();
+
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "User not found" };
+  if (!user.passwordHash) {
+    return { error: "Set a password first so you can still log in after disconnecting Google." };
+  }
+
+  await db.user.update({ where: { id: userId }, data: { googleId: null } });
+
+  revalidatePath("/dashboard/settings");
+  return { success: true };
+}
+
+export async function deleteAccountAction(
+  _prevState: SettingsFormState,
+  formData: FormData
+): Promise<SettingsFormState> {
+  const userId = await requireUserId();
+
+  const parsed = deleteAccountSchema.safeParse({
+    confirmation: String(formData.get("confirmation") ?? "").trim(),
+    password: String(formData.get("password") ?? ""),
+  });
+
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = issue.path[0];
+      if (typeof key === "string" && !fieldErrors[key]) fieldErrors[key] = issue.message;
+    }
+    return { fieldErrors };
+  }
+
+  const user = await db.user.findUnique({ where: { id: userId } });
+  if (!user) return { error: "User not found" };
+
+  if (user.passwordHash) {
+    const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
+    if (!valid) return { fieldErrors: { password: "Password is incorrect" } };
+  }
+
+  // Attendance records and the work schedule cascade-delete with the user.
+  await db.user.delete({ where: { id: userId } });
+  await destroySession();
+  redirect("/login?deleted=1");
 }
 
 export async function updatePreferencesAction(

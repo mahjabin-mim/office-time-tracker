@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { loginAction } from "@/lib/actions/auth";
 import { Input, Label, FieldError } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 
@@ -21,7 +23,7 @@ export function LoginForm() {
 
       <div>
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" placeholder="••••••••" required />
+        <PasswordInput id="password" name="password" placeholder="••••••••" required />
         <FieldError>{state?.fieldErrors?.password}</FieldError>
       </div>
 
@@ -34,6 +36,12 @@ export function LoginForm() {
           />
           Remember me
         </label>
+        <Link
+          href="/forgot-password"
+          className="text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400"
+        >
+          Forgot password?
+        </Link>
       </div>
 
       <SubmitButton size="lg" className="w-full" pendingLabel="Logging in…">

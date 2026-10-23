@@ -21,10 +21,13 @@ export const loginSchema = z.object({
 export const attendanceSchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    // "work" records times; the others mark the whole day as leave or a holiday.
+    dayType: z.enum(["work", "leave", "sick", "holiday"]),
     entryTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     outTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
+    isHalfDay: z.boolean(),
   })
-  .refine((data) => !!data.entryTime || !!data.outTime, {
+  .refine((data) => data.dayType !== "work" || !!data.entryTime || !!data.outTime, {
     message: "Enter at least an entry time or an out time",
     path: ["entryTime"],
   });
@@ -32,6 +35,11 @@ export const attendanceSchema = z
 export const scheduleSchema = z.object({
   expectedDailyMinutes: z.number().int().min(60).max(1440),
   breakMinutes: z.number().int().min(0).max(720),
+  halfDayMinutes: z
+    .number({ invalid_type_error: "Enter the half-day hours" })
+    .int()
+    .min(30, "A half day must be at least 30 minutes")
+    .max(1440),
   workStartMinutes: z.number().int().min(0).max(1439),
   workEndMinutes: z.number().int().min(0).max(1439),
   workingDays: z
@@ -46,7 +54,8 @@ export const profileSchema = z.object({
 
 export const passwordChangeSchema = z
   .object({
-    currentPassword: z.string().min(1, "Current password is required"),
+    // Optional for Google-only accounts that are setting a password for the first time.
+    currentPassword: z.string(),
     newPassword: z.string().min(8, "Password must be at least 8 characters"),
     confirmNewPassword: z.string(),
   })
@@ -59,3 +68,33 @@ export const preferencesSchema = z.object({
   theme: z.enum(["light", "dark", "system"]),
   timeFormat: z.enum(["12h", "24h"]),
 });
+
+export const deleteAccountSchema = z.object({
+  confirmation: z.literal("DELETE", {
+    errorMap: () => ({ message: 'Type "DELETE" to confirm' }),
+  }),
+  password: z.string(),
+});
+
+export const pushSubscriptionSchema = z.object({
+  endpoint: z.string().url().startsWith("https://"),
+  keys: z.object({
+    p256dh: z.string().min(1),
+    auth: z.string().min(1),
+  }),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email address"),
+});
+
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(20, "This reset link is invalid"),
+    password: z.string().min(8, "Password must be at least 8 characters"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });

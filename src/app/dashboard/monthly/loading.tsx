@@ -12,24 +12,18 @@ export default function MonthlyLoading() {
         <Skeleton className="h-11 w-48 rounded-xl" />
       </div>
 
-      <div className="space-y-4">
-        <Card className="p-5 sm:max-w-sm">
-          <Skeleton className="h-3.5 w-32" />
-          <Skeleton className="mt-3 h-8 w-24" />
+      <div className="grid gap-4 lg:grid-cols-3">
+        <Card className="p-6 lg:row-span-2">
+          <Skeleton className="h-3.5 w-24" />
+          <Skeleton className="mt-3 h-12 w-36" />
+          <Skeleton className="mt-2 h-3.5 w-32" />
+          <Skeleton className="mt-10 h-2.5 w-full rounded-full" />
         </Card>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Card key={i} className="p-5">
-              <Skeleton className="h-3.5 w-28" />
-              <Skeleton className="mt-3 h-8 w-20" />
-            </Card>
-          ))}
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:col-span-2">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i} className="p-5">
               <Skeleton className="h-3.5 w-24" />
-              <Skeleton className="mt-3 h-8 w-16" />
+              <Skeleton className="mt-3 h-8 w-20" />
             </Card>
           ))}
         </div>

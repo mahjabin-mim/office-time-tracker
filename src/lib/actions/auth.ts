@@ -3,7 +3,9 @@
 import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { DEFAULT_SCHEDULE } from "@/lib/data";
 import { createSession, destroySession } from "@/lib/session";
+import { isValidTimeZone } from "@/lib/time";
 import { loginSchema, signupSchema } from "@/lib/validation";
 
 export type AuthFormState = {
@@ -34,25 +36,25 @@ export async function signupAction(
 
   const existing = await db.user.findUnique({ where: { email: parsed.data.email } });
   if (existing) {
-    return { fieldErrors: { email: "An account with this email already exists" } };
+    return {
+      fieldErrors: {
+        email: existing.passwordHash
+          ? "An account with this email already exists"
+          : "This email is registered with Google. Use \"Continue with Google\" instead.",
+      },
+    };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
+  const timezone = String(formData.get("timezone") ?? "");
 
   const user = await db.user.create({
     data: {
       name: parsed.data.name,
       email: parsed.data.email,
       passwordHash,
-      schedule: {
-        create: {
-          expectedDailyMinutes: 540,
-          breakMinutes: 60,
-          workStartMinutes: 540,
-          workEndMinutes: 1140,
-          workingDays: "0,1,2,3,4",
-        },
-      },
+      timezone: timezone && isValidTimeZone(timezone) ? timezone : null,
+      schedule: { create: DEFAULT_SCHEDULE },
     },
   });
 
@@ -83,6 +85,9 @@ export async function loginAction(
   const user = await db.user.findUnique({ where: { email: parsed.data.email } });
   if (!user) {
     return { error: "Invalid email or password" };
+  }
+  if (!user.passwordHash) {
+    return { error: "This account signs in with Google. Use \"Continue with Google\" instead." };
   }
 
   const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);

@@ -2,37 +2,57 @@
 
 import { useActionState } from "react";
 import { changePasswordAction } from "@/lib/actions/settings";
-import { Input, Label, FieldError } from "@/components/ui/Input";
+import { Label, FieldError } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 
-export function PasswordForm() {
+export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
   const [state, formAction] = useActionState(changePasswordAction, null);
 
   return (
     <form action={formAction} className="space-y-4">
       {state?.error && <Alert>{state.error}</Alert>}
-      {state?.success && <Alert variant="success">Password changed successfully.</Alert>}
+      {state?.success && <Alert variant="success">Password saved successfully.</Alert>}
+      {!hasPassword && !state?.success && (
+        <p className="text-sm text-muted-foreground">
+          You sign in with Google. Set a password to also log in with your email address.
+        </p>
+      )}
 
-      <div>
-        <Label htmlFor="currentPassword">Current password</Label>
-        <Input id="currentPassword" name="currentPassword" type="password" required />
-        <FieldError>{state?.fieldErrors?.currentPassword}</FieldError>
-      </div>
+      {hasPassword && (
+        <div>
+          <Label htmlFor="currentPassword">Current password</Label>
+          <PasswordInput
+            id="currentPassword"
+            name="currentPassword"
+            autoComplete="current-password"
+            required
+          />
+          <FieldError>{state?.fieldErrors?.currentPassword}</FieldError>
+        </div>
+      )}
 
       <div>
         <Label htmlFor="newPassword">New password</Label>
-        <Input id="newPassword" name="newPassword" type="password" required />
+        <PasswordInput id="newPassword" name="newPassword" autoComplete="new-password" required />
         <FieldError>{state?.fieldErrors?.newPassword}</FieldError>
       </div>
 
       <div>
         <Label htmlFor="confirmNewPassword">Confirm new password</Label>
-        <Input id="confirmNewPassword" name="confirmNewPassword" type="password" required />
+        <PasswordInput
+          id="confirmNewPassword"
+          name="confirmNewPassword"
+          autoComplete="new-password"
+          required
+        />
         <FieldError>{state?.fieldErrors?.confirmNewPassword}</FieldError>
       </div>
 
-      <SubmitButton pendingLabel="Updating…">Change password</SubmitButton>
+      <SubmitButton pendingLabel="Saving…">
+        {hasPassword ? "Change password" : "Set password"}
+      </SubmitButton>
     </form>
   );
 }

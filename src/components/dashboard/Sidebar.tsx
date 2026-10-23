@@ -3,23 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { Clock3, LayoutDashboard, CalendarRange, Settings, LogOut } from "lucide-react";
+import { Clock3, LayoutDashboard, CalendarRange, ChartColumnBig, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { logoutAction } from "@/lib/actions/auth";
 
-const NAV_ITEMS = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/monthly", label: "Monthly Summary", icon: CalendarRange },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+export const NAV_ITEMS = [
+  { href: "/dashboard", label: "Dashboard", shortLabel: "Today", icon: LayoutDashboard },
+  { href: "/dashboard/monthly", label: "Monthly Summary", shortLabel: "Monthly", icon: CalendarRange },
+  { href: "/dashboard/yearly", label: "Yearly Overview", shortLabel: "Yearly", icon: ChartColumnBig },
+  { href: "/dashboard/settings", label: "Settings", shortLabel: "Settings", icon: Settings },
 ];
 
-export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+function SidebarContent() {
   const pathname = usePathname();
 
   return (
     <div className="flex h-full flex-col">
       <div className="flex items-center gap-2.5 px-5 pb-6 pt-6">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-600 text-white shadow-glow">
+        <div className="bg-brand-gradient flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-glow">
           <Clock3 className="h-5 w-5" />
         </div>
         <div>
@@ -36,7 +37,6 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
             <Link
               key={item.href}
               href={item.href}
-              onClick={onNavigate}
               className={cn(
                 "relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors",
                 active
@@ -47,7 +47,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
               {active && (
                 <motion.span
                   layoutId="sidebar-active-pill"
-                  className="absolute inset-0 rounded-xl bg-brand-600 shadow-glow"
+                  className="bg-brand-gradient absolute inset-0 rounded-xl shadow-glow"
                   transition={{ type: "spring", stiffness: 500, damping: 35 }}
                 />
               )}
@@ -73,7 +73,7 @@ export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
 
 export function Sidebar() {
   return (
-    <aside className="hidden w-64 shrink-0 border-r border-border bg-card/60 lg:block">
+    <aside className="hidden w-64 shrink-0 border-r border-border bg-card/70 backdrop-blur-xl lg:block">
       <div className="sticky top-0 h-screen">
         <SidebarContent />
       </div>

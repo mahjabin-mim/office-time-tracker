@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SignupForm } from "@/components/auth/SignupForm";
+import { AuthDivider, GoogleButton } from "@/components/auth/GoogleButton";
 
 export default function SignupPage() {
   return (
@@ -9,7 +10,9 @@ export default function SignupPage() {
         Start tracking your office hours in under a minute.
       </p>
 
-      <div className="mt-6">
+      <div className="mt-6 space-y-5">
+        <GoogleButton label="Sign up with Google" />
+        <AuthDivider label="or sign up with email" />
         <SignupForm />
       </div>
 

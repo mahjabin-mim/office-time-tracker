@@ -4,26 +4,35 @@ import {
   Bar,
   BarChart,
   Cell,
+  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import type { DayRow } from "@/lib/data";
+import type { DayRow } from "@/lib/calendar";
+import { balanceAxis, formatBalanceTick } from "@/lib/chart";
 import { minutesToDurationSigned } from "@/lib/time";
+
+const UNCOUNTED = new Set(["non-working", "future", "leave", "not-tracked"]);
 
 export function MonthlyChart({ rows }: { rows: DayRow[] }) {
   const data = rows
-    .filter((r) => r.status !== "non-working" && r.status !== "future")
-    .map((r) => ({
-      day: r.date.getDate(),
-      difference: r.differenceMinutes ?? 0,
-      status: r.status,
-      recorded: r.differenceMinutes != null,
-    }));
+    .filter((r) => !UNCOUNTED.has(r.status))
+    .map((r) => {
+      // Today's running total isn't final, so it stays out of the chart like it does the balance.
+      const recorded = r.differenceMinutes != null && r.status !== "in-progress";
+      return {
+        day: r.date.getUTCDate(),
+        difference: recorded ? r.differenceMinutes! : 0,
+        status: r.status,
+        recorded,
+      };
+    });
 
   const hasAnyData = data.some((d) => d.recorded);
+  const { ticks, domain } = balanceAxis(data.map((d) => d.difference));
 
   return (
     <Card>
@@ -46,15 +55,20 @@ export function MonthlyChart({ rows }: { rows: DayRow[] }) {
                   tickLine={false}
                   axisLine={false}
                   tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
-                  tickFormatter={(v) => `${Math.round(v / 60)}h`}
+                  ticks={ticks}
+                  domain={domain}
+                  tickFormatter={formatBalanceTick}
                 />
+                <ReferenceLine y={0} stroke="hsl(var(--border))" />
                 <Tooltip
-                  formatter={(value: number) => minutesToDurationSigned(value)}
+                  cursor={{ fill: "hsl(var(--muted))", opacity: 0.6 }}
+                  formatter={(value: number) => [minutesToDurationSigned(value), "Balance"]}
                   labelFormatter={(label) => `Day ${label}`}
                   contentStyle={{
                     borderRadius: 12,
                     border: "1px solid hsl(var(--border))",
                     background: "hsl(var(--card))",
+                    color: "hsl(var(--foreground))",
                     fontSize: 13,
                   }}
                 />

@@ -1,16 +1,23 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { signupAction } from "@/lib/actions/auth";
 import { Input, Label, FieldError } from "@/components/ui/Input";
+import { PasswordInput } from "@/components/ui/PasswordInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
 
 export function SignupForm() {
   const [state, formAction] = useActionState(signupAction, null);
+  const [timezone, setTimezone] = useState("");
+
+  useEffect(() => {
+    setTimezone(Intl.DateTimeFormat().resolvedOptions().timeZone ?? "");
+  }, []);
 
   return (
     <form action={formAction} className="space-y-4">
+      <input type="hidden" name="timezone" value={timezone} />
       {state?.error && <Alert>{state.error}</Alert>}
 
       <div>
@@ -27,13 +34,13 @@ export function SignupForm() {
 
       <div>
         <Label htmlFor="password">Password</Label>
-        <Input id="password" name="password" type="password" placeholder="At least 8 characters" required />
+        <PasswordInput id="password" name="password" placeholder="At least 8 characters" required />
         <FieldError>{state?.fieldErrors?.password}</FieldError>
       </div>
 
       <div>
         <Label htmlFor="confirmPassword">Confirm password</Label>
-        <Input id="confirmPassword" name="confirmPassword" type="password" placeholder="Repeat password" required />
+        <PasswordInput id="confirmPassword" name="confirmPassword" placeholder="Repeat password" required />
         <FieldError>{state?.fieldErrors?.confirmPassword}</FieldError>
       </div>
 

@@ -8,17 +8,25 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
-  timeFormat   String   @default("12h") // "12h" | "24h"
-  theme        String   @default("system") // "light" | "dark" | "system"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id             String   @id @default(cuid())
+  name           String
+  email          String   @unique
+  passwordHash   String? // null for accounts that only sign in with Google
+  googleId       String?  @unique
+  timeFormat     String   @default("12h") // "12h" | "24h"
+  theme          String   @default("system") // "light" | "dark" | "system"
+  timezone       String? // IANA zone detected from the browser, e.g. "Asia/Dhaka"
+  remindClockIn  Boolean  @default(false)
+  remindLeave    Boolean  @default(true)
+  remindClockOut Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  attendances Attendance[]
-  schedule    WorkSchedule?
+  attendances       Attendance[]
+  schedule          WorkSchedule?
+  pushSubscriptions PushSubscription[]
+  reminderLogs      ReminderLog[]
+  passwordResets    PasswordResetToken[]
 }
 
 model WorkSchedule {
@@ -27,6 +35,7 @@ model WorkSchedule {
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expectedDailyMinutes Int      @default(540)
   breakMinutes         Int      @default(60)
+  halfDayMinutes       Int      @default(270)
   workStartMinutes     Int      @default(540)
   workEndMinutes       Int      @default(1140)
   workingDays          String   @default("0,1,2,3,4")
@@ -38,12 +47,51 @@ model Attendance {
   id           String   @id @default(cuid())
   userId       String
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  date         DateTime
+  date         DateTime // the calendar day, stored as UTC midnight
   entryMinutes Int?
   outMinutes   Int?
+  isHalfDay    Boolean  @default(false)
+  leaveType    String? // "leave" | "sick" | "holiday"; times are ignored when set
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   @@unique([userId, date])
   @@index([userId, date])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// One row per reminder sent, so each kind fires at most once per user per day.
+model ReminderLog {
+  id      String   @id @default(cuid())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dateKey String // YYYY-MM-DD in the user's time zone
+  kind    String // "clock-in" | "leave" | "clock-out"
+  sentAt  DateTime @default(now())
+
+  @@unique([userId, dateKey, kind])
+}
+
+/// Single-use "forgot password" links. Only a SHA-256 hash of the token is stored.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

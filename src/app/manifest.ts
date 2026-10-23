@@ -7,8 +7,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Track your daily entry and out time, and see your monthly balance at a glance.",
     start_url: "/dashboard",
     display: "standalone",
-    background_color: "#f2f1ff",
-    theme_color: "#5f3dff",
+    background_color: "#f4f2ff",
+    theme_color: "#6a2ff5",
     orientation: "portrait-primary",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },

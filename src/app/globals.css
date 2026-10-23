@@ -3,37 +3,43 @@
 @tailwind utilities;
 
 :root {
-  --background: 240 33% 98%;
-  --foreground: 240 10% 12%;
+  --background: 250 45% 98.5%;
+  --foreground: 245 25% 12%;
   --card: 0 0% 100%;
-  --card-foreground: 240 10% 12%;
-  --surface: 240 25% 96%;
-  --muted: 240 15% 94%;
-  --muted-foreground: 240 6% 46%;
-  --border: 240 14% 90%;
-  --input: 240 14% 90%;
-  --ring: 253 92% 66%;
-  --extra: 152 60% 40%;
-  --extra-foreground: 152 76% 96%;
-  --less: 8 78% 58%;
-  --less-foreground: 8 90% 97%;
+  --card-foreground: 245 25% 12%;
+  --surface: 250 35% 96.5%;
+  --muted: 250 25% 94%;
+  --muted-foreground: 245 9% 45%;
+  --border: 250 20% 90%;
+  --input: 250 20% 88%;
+  --ring: 258 90% 60%;
+  --extra: 158 64% 38%;
+  --extra-foreground: 158 70% 96%;
+  --less: 350 78% 56%;
+  --less-foreground: 350 90% 97%;
+  --aurora-1: 258 95% 70%;
+  --aurora-2: 290 90% 72%;
+  --aurora-3: 200 95% 70%;
 }
 
 .dark {
-  --background: 240 24% 8%;
-  --foreground: 240 20% 96%;
-  --card: 240 22% 11%;
-  --card-foreground: 240 20% 96%;
-  --surface: 240 20% 13%;
-  --muted: 240 18% 16%;
-  --muted-foreground: 240 10% 65%;
-  --border: 240 16% 20%;
-  --input: 240 16% 20%;
-  --ring: 253 92% 66%;
-  --extra: 152 55% 52%;
-  --extra-foreground: 152 40% 10%;
-  --less: 8 82% 66%;
-  --less-foreground: 8 40% 10%;
+  --background: 238 38% 7%;
+  --foreground: 240 30% 96%;
+  --card: 238 32% 10.5%;
+  --card-foreground: 240 30% 96%;
+  --surface: 238 28% 13%;
+  --muted: 238 24% 16%;
+  --muted-foreground: 240 14% 66%;
+  --border: 238 22% 19%;
+  --input: 238 22% 22%;
+  --ring: 258 92% 70%;
+  --extra: 158 58% 52%;
+  --extra-foreground: 158 45% 10%;
+  --less: 350 88% 68%;
+  --less-foreground: 350 45% 10%;
+  --aurora-1: 258 90% 55%;
+  --aurora-2: 290 80% 50%;
+  --aurora-3: 210 90% 50%;
 }
 
 * {
@@ -63,6 +69,35 @@ body {
       radial-gradient(circle at 85% 0%, hsl(var(--ring) / 0.1), transparent 45%);
   }
 
+  .bg-brand-gradient {
+    background-image: linear-gradient(
+      120deg,
+      theme("colors.brand.600"),
+      theme("colors.brand.500") 45%,
+      theme("colors.fuchsia.500")
+    );
+    background-size: 200% 200%;
+  }
+
+  .text-gradient {
+    background-image: linear-gradient(
+      100deg,
+      theme("colors.brand.600"),
+      theme("colors.fuchsia.500")
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .dark .text-gradient {
+    background-image: linear-gradient(
+      100deg,
+      theme("colors.brand.300"),
+      theme("colors.fuchsia.300")
+    );
+  }
+
   .scrollbar-thin::-webkit-scrollbar {
     height: 6px;
     width: 6px;
@@ -70,5 +105,17 @@ body {
   .scrollbar-thin::-webkit-scrollbar-thumb {
     background: hsl(var(--muted-foreground) / 0.4);
     border-radius: 999px;
+  }
+}
+
+/* Honour the OS "reduce motion" setting for every CSS animation and transition. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

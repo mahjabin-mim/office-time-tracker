@@ -1,34 +1,40 @@
+import { Clock3 } from "lucide-react";
 import { requireCurrentUser } from "@/lib/data";
 import { Sidebar } from "@/components/dashboard/Sidebar";
-import { MobileNav } from "@/components/dashboard/MobileNav";
+import { MobileTabBar } from "@/components/dashboard/MobileTabBar";
+import { UserMenu } from "@/components/dashboard/UserMenu";
 import { ThemeToggle } from "@/components/dashboard/ThemeToggle";
 import { InstallAppButton } from "@/components/dashboard/InstallAppButton";
+import { TimezoneSync } from "@/components/dashboard/TimezoneSync";
+import { AuroraBackground } from "@/components/ui/AuroraBackground";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireCurrentUser();
-  const initial = user.name.trim().charAt(0).toUpperCase() || "?";
 
   return (
-    <div className="flex min-h-screen bg-noise">
+    <div className="relative flex min-h-screen">
+      <AuroraBackground />
       <Sidebar />
-      <div className="flex min-h-screen flex-1 flex-col">
-        <header className="flex items-center justify-between gap-3 border-b border-border px-4 py-3 sm:px-6">
-          <MobileNav />
-          <div className="ml-auto flex items-center gap-3">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+        <header className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur-md sm:px-6">
+          <div className="flex items-center gap-2.5 lg:hidden">
+            <div className="bg-brand-gradient flex h-8 w-8 items-center justify-center rounded-xl text-white shadow-glow">
+              <Clock3 className="h-4 w-4" />
+            </div>
+            <p className="text-sm font-semibold tracking-tight">Office Time</p>
+          </div>
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
             <InstallAppButton />
             <ThemeToggle />
-            <div className="flex items-center gap-2 rounded-full border border-border bg-card px-1.5 py-1 pr-3">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">
-                {initial}
-              </div>
-              <span className="hidden text-sm font-medium sm:inline">{user.name}</span>
-            </div>
+            <UserMenu name={user.name} email={user.email} />
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="flex-1 px-4 pb-28 pt-6 sm:px-6 lg:px-8 lg:pb-10">
           <div className="mx-auto w-full max-w-6xl">{children}</div>
         </main>
       </div>
+      <MobileTabBar />
+      <TimezoneSync current={user.timezone} />
     </div>
   );
 }

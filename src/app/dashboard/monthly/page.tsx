@@ -1,6 +1,16 @@
-import { getMonthRows, getOrCreateSchedule, requireCurrentUser, summarizeMonth } from "@/lib/data";
-import { MonthSelector } from "@/components/dashboard/MonthSelector";
+import {
+  getMonthRows,
+  getOrCreateSchedule,
+  getUserNow,
+  requireCurrentUser,
+  summarizeRows,
+} from "@/lib/data";
+import { formatMonthLabel } from "@/lib/time";
+import { parsePeriod } from "@/lib/period";
+import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
+import { ExportLink } from "@/components/dashboard/ExportLink";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
+import { BalanceHero } from "@/components/dashboard/BalanceHero";
 import { AttendanceTable } from "@/components/dashboard/AttendanceTable";
 import { MonthlyChart } from "@/components/dashboard/MonthlyChart";
 import { Reveal } from "@/components/ui/Reveal";
@@ -11,92 +21,81 @@ export default async function MonthlySummaryPage({
 }: {
   searchParams: Promise<{ year?: string; month?: string }>;
 }) {
-  const params = await searchParams;
   const user = await requireCurrentUser();
   const schedule = await getOrCreateSchedule(user.id);
   const timeFormat = user.timeFormat as "12h" | "24h";
 
-  const now = new Date();
-  const year = params.year ? Number(params.year) : now.getFullYear();
-  const month = params.month ? Number(params.month) : now.getMonth();
-
+  const now = getUserNow(user);
+  const { year, month } = parsePeriod(await searchParams, now);
   const rows = await getMonthRows(user, schedule, year, month);
-  const summary = summarizeMonth(rows);
+  const summary = summarizeRows(rows);
+
+  const prev = month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 };
+  const next = month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 };
+  const nextIsFuture = next.year > now.year || (next.year === now.year && next.month > now.month);
+  const href = (p: { year: number; month: number }) =>
+    `/dashboard/monthly?year=${p.year}&month=${p.month}`;
+
+  const stats = [
+    { label: "Total worked", value: summary.totalWorkedMinutes, format: "duration" as const },
+    { label: "Expected", value: summary.totalExpectedMinutes, format: "duration" as const },
+    {
+      label: "Average / day",
+      value: summary.averageMinutesPerDay,
+      format: "duration" as const,
+      tone: "brand" as const,
+    },
+    {
+      label: "Days completed",
+      value: summary.daysCompletedCount,
+      format: "count" as const,
+      hint: [
+        `of ${summary.workingDaysCount} working days`,
+        summary.daysMissingCount > 0 && `${summary.daysMissingCount} missing`,
+        summary.daysOffWorkedCount > 0 && `+${summary.daysOffWorkedCount} day off worked`,
+      ]
+        .filter(Boolean)
+        .join(" · "),
+    },
+    { label: "Half days", value: summary.halfDaysCount, format: "count" as const },
+    { label: "Leave & holidays", value: summary.leaveDaysCount, format: "count" as const },
+  ];
 
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <Reveal>
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Monthly Summary</h1>
-          <p className="mt-1 text-muted-foreground">
-            Your complete monthly balance, day by day.
-          </p>
+          <p className="mt-1 text-muted-foreground">Your complete monthly balance, day by day.</p>
         </Reveal>
-        <MonthSelector year={year} month={month} />
+        <div className="flex flex-wrap items-center gap-2">
+          <PeriodSelector
+            label={formatMonthLabel(year, month)}
+            prevHref={href(prev)}
+            nextHref={nextIsFuture ? null : href(next)}
+            prevLabel="Previous month"
+            nextLabel="Next month"
+          />
+          <ExportLink href={`/api/export?format=csv&year=${year}&month=${month}`} />
+        </div>
       </div>
 
-      <section className="space-y-4">
-        <Reveal delay={0.05}>
-          <SummaryCard
-            label={summary.balanceMinutes >= 0 ? "Extra time this month" : "Less time this month"}
-            value={
-              <AnimatedNumber value={summary.balanceMinutes} format="signed" />
-            }
-            tone={summary.balanceMinutes >= 0 ? "extra" : "less"}
-            className="sm:max-w-sm"
-          />
+      <section className="grid gap-4 lg:grid-cols-3">
+        <Reveal delay={0.05} className="lg:row-span-2">
+          <BalanceHero summary={summary} period="month" />
         </Reveal>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Reveal delay={0.1}>
-            <SummaryCard
-              label="Total worked"
-              value={<AnimatedNumber value={summary.totalWorkedMinutes} format="duration" />}
-            />
-          </Reveal>
-          <Reveal delay={0.13}>
-            <SummaryCard
-              label="Expected working time"
-              value={
-                <AnimatedNumber value={summary.totalExpectedMinutes} format="duration" />
-              }
-            />
-          </Reveal>
-          <Reveal delay={0.16}>
-            <SummaryCard
-              label="Total extra time"
-              value={<AnimatedNumber value={summary.totalExtraMinutes} format="duration" />}
-              tone="extra"
-            />
-          </Reveal>
-          <Reveal delay={0.19}>
-            <SummaryCard
-              label="Total less time"
-              value={<AnimatedNumber value={summary.totalLessMinutes} format="duration" />}
-              tone="less"
-            />
-          </Reveal>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-3">
-          <Reveal delay={0.22}>
-            <SummaryCard
-              label="Working days"
-              value={<AnimatedNumber value={summary.workingDaysCount} format="count" />}
-            />
-          </Reveal>
-          <Reveal delay={0.25}>
-            <SummaryCard
-              label="Days completed"
-              value={<AnimatedNumber value={summary.daysCompletedCount} format="count" />}
-            />
-          </Reveal>
-          <Reveal delay={0.28}>
-            <SummaryCard
-              label="Average hours/day"
-              value={
-                <AnimatedNumber value={summary.averageMinutesPerDay} format="duration" />
-              }
-            />
-          </Reveal>
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:col-span-2">
+          {stats.map((stat, i) => (
+            <Reveal key={stat.label} delay={0.1 + i * 0.03} className="h-full">
+              <SummaryCard
+                className="h-full"
+                label={stat.label}
+                value={<AnimatedNumber value={stat.value} format={stat.format} />}
+                hint={stat.hint}
+                tone={stat.tone}
+              />
+            </Reveal>
+          ))}
         </div>
       </section>
 
@@ -109,7 +108,11 @@ export default async function MonthlySummaryPage({
           Monthly Attendance
         </h2>
         <Reveal delay={0.35}>
-          <AttendanceTable rows={rows} timeFormat={timeFormat} />
+          <AttendanceTable
+            rows={rows}
+            timeFormat={timeFormat}
+            halfDayMinutes={schedule.halfDayMinutes}
+          />
         </Reveal>
       </section>
     </div>
