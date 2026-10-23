@@ -69,8 +69,7 @@ export function minutesToDurationSigned(totalMinutes: number): string {
 
 export function computeWorkedMinutes(
   entryMinutes: number | null | undefined,
-  outMinutes: number | null | undefined,
-  breakMinutes: number
+  outMinutes: number | null | undefined
 ): number | null {
   if (entryMinutes == null || outMinutes == null) return null;
   let out = outMinutes;
@@ -78,8 +77,7 @@ export function computeWorkedMinutes(
     // overnight shift: out time rolls into the next day
     out += 1440;
   }
-  const worked = out - entryMinutes - breakMinutes;
-  return Math.max(0, worked);
+  return out - entryMinutes;
 }
 
 // Calendar days are represented as UTC midnight, so a given day maps to the same Date on any
@@ -228,8 +226,6 @@ export interface DayComputation {
   status: DayStatus;
   workedMinutes: number | null;
   expectedMinutes: number;
-  /** Break actually deducted for this day (0 on half days and days off). */
-  breakMinutes: number;
   differenceMinutes: number | null;
   countsTowardBalance: boolean;
 }
@@ -243,7 +239,6 @@ export function computeDayStatus(params: {
   entryMinutes: number | null | undefined;
   outMinutes: number | null | undefined;
   expectedDailyMinutes: number;
-  breakMinutes: number;
   isHalfDay?: boolean;
   halfDayMinutes?: number;
   leaveType?: LeaveType | null;
@@ -256,7 +251,6 @@ export function computeDayStatus(params: {
     status,
     workedMinutes: null,
     expectedMinutes: 0,
-    breakMinutes: 0,
     differenceMinutes: null,
     countsTowardBalance: false,
   });
@@ -279,14 +273,12 @@ export function computeDayStatus(params: {
     : isHalfDay
     ? params.halfDayMinutes ?? DEFAULT_HALF_DAY_MINUTES
     : params.expectedDailyMinutes;
-  const breakMinutes = !isWorking || isHalfDay ? 0 : params.breakMinutes;
 
   if (!hasEntry && !hasOut) {
     return {
       status: "missing",
       workedMinutes: null,
       expectedMinutes: expectedDailyMinutes,
-      breakMinutes,
       differenceMinutes: null,
       countsTowardBalance: false,
     };
@@ -298,13 +290,12 @@ export function computeDayStatus(params: {
       const worked =
         nowMinutes <= entryMinutes
           ? 0
-          : computeWorkedMinutes(entryMinutes, nowMinutes, breakMinutes) ?? 0;
+          : computeWorkedMinutes(entryMinutes, nowMinutes) ?? 0;
       return {
         status: "in-progress",
         workedMinutes: worked,
         expectedMinutes: expectedDailyMinutes,
-        breakMinutes,
-        differenceMinutes: worked - expectedDailyMinutes,
+          differenceMinutes: worked - expectedDailyMinutes,
         countsTowardBalance: false,
       };
     }
@@ -312,19 +303,17 @@ export function computeDayStatus(params: {
       status: "incomplete",
       workedMinutes: null,
       expectedMinutes: expectedDailyMinutes,
-      breakMinutes,
       differenceMinutes: null,
       countsTowardBalance: false,
     };
   }
 
-  const worked = computeWorkedMinutes(entryMinutes, outMinutes, breakMinutes)!;
+  const worked = computeWorkedMinutes(entryMinutes, outMinutes)!;
   const difference = worked - expectedDailyMinutes;
   return {
     status: difference === 0 ? "on-target" : difference > 0 ? "extra" : "less",
     workedMinutes: worked,
     expectedMinutes: expectedDailyMinutes,
-    breakMinutes,
     differenceMinutes: difference,
     countsTowardBalance: true,
   };

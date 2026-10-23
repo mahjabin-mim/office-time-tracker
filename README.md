@@ -59,7 +59,7 @@ Track daily office entry/out times and see your monthly worked-time balance at a
 
 - **One-tap Clock in / Clock out** on the dashboard, with a live progress ring, the time left, and when you can leave
 - **Half days**: tick "Half day" when adding a day. Expected time drops to your half-day length
-  (4h 30m by default, set in Settings → Working Schedule) and no break is deducted
+  (4h 30m by default, set in Settings → Working Schedule)
 - **Leave, sick days, and holidays**: mark any day (including future ones) so it never counts as
   missing or short
 - **Work on a day off** counts entirely as extra time

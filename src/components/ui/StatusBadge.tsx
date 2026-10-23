@@ -90,7 +90,7 @@ export function HalfDayTag({ className }: { className?: string }) {
         "inline-flex items-center rounded-full bg-sky-500/15 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:text-sky-300",
         className
       )}
-      title="Half day: shorter expected time, no break deducted"
+      title="Half day: shorter expected time"
     >
       Half day
     </span>

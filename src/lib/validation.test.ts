@@ -39,7 +39,6 @@ describe("attendanceSchema", () => {
 describe("scheduleSchema", () => {
   const valid = {
     expectedDailyMinutes: 540,
-    breakMinutes: 60,
     halfDayMinutes: 270,
     workStartMinutes: 540,
     workEndMinutes: 1140,

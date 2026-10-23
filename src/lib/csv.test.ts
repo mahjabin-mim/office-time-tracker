@@ -29,9 +29,9 @@ describe("rowsToCsv", () => {
     rangeEnd: dateKeyToDate("2026-10-22"),
     records: [
       { date: dateKeyToDate("2026-10-21"), entryMinutes: null, outMinutes: null, isHalfDay: false, leaveType: "sick" },
-      { date: dateKeyToDate("2026-10-22"), entryMinutes: 540, outMinutes: 1155, isHalfDay: false, leaveType: null },
+      { date: dateKeyToDate("2026-10-22"), entryMinutes: 540, outMinutes: 1095, isHalfDay: false, leaveType: null },
     ],
-    schedule: { expectedDailyMinutes: 540, breakMinutes: 60, halfDayMinutes: 270, workingDays: "0,1,2,3,4" },
+    schedule: { expectedDailyMinutes: 540, halfDayMinutes: 270, workingDays: "0,1,2,3,4" },
     now,
   });
   const lines = rowsToCsv(rows).trimEnd().split("\r\n");
@@ -43,6 +43,6 @@ describe("rowsToCsv", () => {
 
   it("writes leave and worked days", () => {
     expect(lines[1]).toBe("2026-10-21,Wednesday,,,No,,,,Sick leave");
-    expect(lines[2]).toBe("2026-10-22,Thursday,09:00,19:15,No,9:15,9:00,+0:15,Extra");
+    expect(lines[2]).toBe("2026-10-22,Thursday,09:00,18:15,No,9:15,9:00,+0:15,Extra");
   });
 });

@@ -33,7 +33,6 @@ export async function updateScheduleAction(
 
   const parsed = scheduleSchema.safeParse({
     expectedDailyMinutes: Number(formData.get("expectedDailyHours")) * 60,
-    breakMinutes: Number(formData.get("breakMinutes")),
     halfDayMinutes: Math.round(Number(formData.get("halfDayHours")) * 60),
     workStartMinutes: clockToMinutes(workStartRaw) ?? 540,
     workEndMinutes: clockToMinutes(workEndRaw) ?? 1020,

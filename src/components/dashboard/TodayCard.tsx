@@ -137,7 +137,10 @@ export function TodayCard({
           {inProgress && leaveAt != null ? (
             <Stat label="Leave at" value={minutesToClock(leaveAt, timeFormat)} highlight />
           ) : (
-            <Stat label="Break" value={minutesToDuration(row.breakMinutes)} />
+            <Stat
+              label="Worked"
+              value={row.workedMinutes != null ? minutesToDuration(row.workedMinutes) : "—"}
+            />
           )}
         </div>
       </div>

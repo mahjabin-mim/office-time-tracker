@@ -36,7 +36,7 @@ model WorkSchedule {
   userId               String   @unique
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   expectedDailyMinutes Int      @default(540)
-  breakMinutes         Int      @default(60)
+  breakMinutes         Int      @default(60) // unused: worked time is simply out minus entry
   halfDayMinutes       Int      @default(270)
   workStartMinutes     Int      @default(540)
   workEndMinutes       Int      @default(1140)

@@ -12,7 +12,6 @@ import {
 
 export interface ScheduleLike {
   expectedDailyMinutes: number;
-  breakMinutes: number;
   halfDayMinutes: number;
   workingDays: string;
 }
@@ -38,7 +37,6 @@ export interface DayRow {
   status: DayStatus;
   workedMinutes: number | null;
   expectedMinutes: number;
-  breakMinutes: number;
   differenceMinutes: number | null;
 }
 
@@ -69,7 +67,6 @@ export function buildDayRows(params: {
       entryMinutes: record?.entryMinutes,
       outMinutes: record?.outMinutes,
       expectedDailyMinutes: schedule.expectedDailyMinutes,
-      breakMinutes: schedule.breakMinutes,
       isHalfDay: record?.isHalfDay,
       halfDayMinutes: schedule.halfDayMinutes,
       leaveType,
@@ -88,7 +85,6 @@ export function buildDayRows(params: {
       status: computation.status,
       workedMinutes: computation.workedMinutes,
       expectedMinutes: computation.expectedMinutes,
-      breakMinutes: computation.breakMinutes,
       differenceMinutes: computation.differenceMinutes,
     });
   }
@@ -191,6 +187,6 @@ export function summarizeByMonth(rows: DayRow[]): MonthBreakdown[] {
 }
 
 /** Wall-clock minute at which the expected time for an in-progress day is reached. */
-export function leaveAtMinutes(row: Pick<DayRow, "entryMinutes" | "expectedMinutes" | "breakMinutes">) {
-  return row.entryMinutes != null ? row.entryMinutes + row.expectedMinutes + row.breakMinutes : null;
+export function leaveAtMinutes(row: Pick<DayRow, "entryMinutes" | "expectedMinutes">) {
+  return row.entryMinutes != null ? row.entryMinutes + row.expectedMinutes : null;
 }

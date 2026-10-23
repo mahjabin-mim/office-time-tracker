@@ -26,7 +26,6 @@ export async function requireCurrentUser() {
 
 export const DEFAULT_SCHEDULE = {
   expectedDailyMinutes: 540,
-  breakMinutes: 60,
   halfDayMinutes: DEFAULT_HALF_DAY_MINUTES,
   workStartMinutes: 540,
   workEndMinutes: 1140,

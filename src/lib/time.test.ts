@@ -49,18 +49,18 @@ describe("clock and duration formatting", () => {
 });
 
 describe("computeWorkedMinutes", () => {
-  it("subtracts the break from the span", () => {
-    expect(computeWorkedMinutes(9 * H, 18 * H, 60)).toBe(8 * H);
+  it("is simply the time from entry to out, with no break deducted", () => {
+    expect(computeWorkedMinutes(9 * H, 18 * H)).toBe(9 * H);
   });
 
   it("treats an out time before the entry as an overnight shift", () => {
-    expect(computeWorkedMinutes(22 * H, 6 * H, 0)).toBe(8 * H);
+    expect(computeWorkedMinutes(22 * H, 6 * H)).toBe(8 * H);
   });
 
-  it("never goes negative and needs both times", () => {
-    expect(computeWorkedMinutes(9 * H, 9 * H + 30, 60)).toBe(0);
-    expect(computeWorkedMinutes(null, 18 * H, 60)).toBeNull();
-    expect(computeWorkedMinutes(9 * H, undefined, 60)).toBeNull();
+  it("needs both times", () => {
+    expect(computeWorkedMinutes(9 * H, 9 * H + 30)).toBe(30);
+    expect(computeWorkedMinutes(null, 18 * H)).toBeNull();
+    expect(computeWorkedMinutes(9 * H, undefined)).toBeNull();
   });
 });
 
@@ -125,9 +125,8 @@ describe("computeDayStatus", () => {
     nowMinutes: 14 * H,
     isWorking: true,
     entryMinutes: 9 * H,
-    outMinutes: 19 * H,
+    outMinutes: 18 * H,
     expectedDailyMinutes: 9 * H,
-    breakMinutes: 60,
   };
 
   it("marks a full day on target, extra, or less", () => {
@@ -137,17 +136,17 @@ describe("computeDayStatus", () => {
       differenceMinutes: 0,
       countsTowardBalance: true,
     });
-    expect(computeDayStatus({ ...base, outMinutes: 19 * H + 30 })).toMatchObject({
+    expect(computeDayStatus({ ...base, outMinutes: 18 * H + 30 })).toMatchObject({
       status: "extra",
       differenceMinutes: 30,
     });
-    expect(computeDayStatus({ ...base, outMinutes: 18 * H })).toMatchObject({
+    expect(computeDayStatus({ ...base, outMinutes: 17 * H })).toMatchObject({
       status: "less",
       differenceMinutes: -60,
     });
   });
 
-  it("uses the half-day length and skips the break on half days", () => {
+  it("uses the half-day length on half days", () => {
     const halfDay = computeDayStatus({
       ...base,
       isHalfDay: true,
@@ -157,7 +156,6 @@ describe("computeDayStatus", () => {
     expect(halfDay).toMatchObject({
       status: "on-target",
       expectedMinutes: 270,
-      breakMinutes: 0,
       workedMinutes: 270,
     });
     expect(
@@ -165,10 +163,10 @@ describe("computeDayStatus", () => {
     ).toMatchObject({ status: "on-target", expectedMinutes: 240 });
   });
 
-  it("counts every minute worked on a day off as extra, with no break", () => {
+  it("counts every minute worked on a day off as extra", () => {
     expect(
       computeDayStatus({ ...base, isWorking: false, entryMinutes: 10 * H, outMinutes: 12 * H })
-    ).toMatchObject({ status: "extra", expectedMinutes: 0, breakMinutes: 0, differenceMinutes: 120 });
+    ).toMatchObject({ status: "extra", expectedMinutes: 0, differenceMinutes: 120 });
   });
 
   it("never counts leave or holidays, even when times exist or the day is in the future", () => {
@@ -214,8 +212,8 @@ describe("computeDayStatus", () => {
     const today = { ...base, dateKey: "2026-10-23", outMinutes: null };
     expect(computeDayStatus(today)).toMatchObject({
       status: "in-progress",
-      workedMinutes: 4 * H, // 09:00 → 14:00 minus the 1h break
-      differenceMinutes: -5 * H,
+      workedMinutes: 5 * H, // 09:00 → 14:00
+      differenceMinutes: -4 * H,
       countsTowardBalance: false,
     });
   });

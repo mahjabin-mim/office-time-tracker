@@ -6,7 +6,6 @@ import { dateKeyToDate, getZonedNow } from "@/lib/time";
 const H = 60;
 const schedule = {
   expectedDailyMinutes: 9 * H,
-  breakMinutes: 60,
   halfDayMinutes: 4.5 * H,
   workingDays: "0,1,2,3,4",
   workStartMinutes: 9 * H,
@@ -57,15 +56,15 @@ describe("dueReminders", () => {
   });
 
   it("says it's time to leave once the expected hours are done", () => {
-    const entry = { entryMinutes: 9 * H }; // leave at 19:00 with the 1h break
-    expect(kindsAt(18 * H + 59, entry)).toEqual([]);
-    expect(kindsAt(19 * H, entry)).toEqual(["leave"]);
+    const entry = { entryMinutes: 9 * H }; // 9h expected, so leave at 18:00
+    expect(kindsAt(17 * H + 59, entry)).toEqual([]);
+    expect(kindsAt(18 * H, entry)).toEqual(["leave"]);
   });
 
   it("switches to a clock-out nudge well past the leave time", () => {
     const entry = { entryMinutes: 9 * H };
-    expect(kindsAt(19 * H + CLOCK_OUT_GRACE_MINUTES - 1, entry)).toEqual(["leave"]);
-    expect(kindsAt(19 * H + CLOCK_OUT_GRACE_MINUTES, entry)).toEqual(["clock-out"]);
+    expect(kindsAt(18 * H + CLOCK_OUT_GRACE_MINUTES - 1, entry)).toEqual(["leave"]);
+    expect(kindsAt(18 * H + CLOCK_OUT_GRACE_MINUTES, entry)).toEqual(["clock-out"]);
   });
 
   it("uses the half-day length for the leave time", () => {
@@ -73,10 +72,10 @@ describe("dueReminders", () => {
   });
 
   it("sends nothing once the day is closed, on leave, or when turned off", () => {
-    expect(kindsAt(20 * H, { entryMinutes: 9 * H, outMinutes: 19 * H })).toEqual([]);
+    expect(kindsAt(20 * H, { entryMinutes: 9 * H, outMinutes: 18 * H })).toEqual([]);
     expect(kindsAt(10 * H + 30, { leaveType: "sick" })).toEqual([]);
     expect(
-      kindsAt(19 * H, { entryMinutes: 9 * H }, { ...allOn, remindLeave: false })
+      kindsAt(18 * H, { entryMinutes: 9 * H }, { ...allOn, remindLeave: false })
     ).toEqual([]);
     expect(kindsAt(10 * H + 30, null, { ...allOn, remindClockIn: false })).toEqual([]);
   });

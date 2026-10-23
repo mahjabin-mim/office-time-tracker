@@ -11,7 +11,6 @@ import { dateKeyToDate, getZonedNow } from "@/lib/time";
 const H = 60;
 const schedule = {
   expectedDailyMinutes: 9 * H,
-  breakMinutes: 60,
   halfDayMinutes: 4.5 * H,
   workingDays: "0,1,2,3,4", // Sun–Thu
 };
@@ -22,7 +21,7 @@ function record(dateKey: string, fields: Partial<AttendanceLike> = {}): Attendan
   return {
     date: dateKeyToDate(dateKey),
     entryMinutes: 9 * H,
-    outMinutes: 19 * H,
+    outMinutes: 18 * H,
     isHalfDay: false,
     leaveType: null,
     ...fields,
@@ -72,9 +71,9 @@ describe("buildDayRows", () => {
 describe("summarizeRows", () => {
   const rows = rowsFor(
     [
-      record("2026-10-01", { outMinutes: 19 * H + 30 }), // +30m
+      record("2026-10-01", { outMinutes: 18 * H + 30 }), // +30m
       record("2026-10-04", { isHalfDay: true, outMinutes: 13 * H }), // half day, -30m
-      record("2026-10-05", { outMinutes: 18 * H }), // -1h
+      record("2026-10-05", { outMinutes: 17 * H }), // -1h
       record("2026-10-06", { entryMinutes: null }), // out only → incomplete
       record("2026-10-07", { entryMinutes: null, outMinutes: null, leaveType: "sick" }),
       record("2026-10-09", { entryMinutes: 10 * H, outMinutes: 12 * H }), // Friday: +2h extra
@@ -125,7 +124,7 @@ describe("summarizeByMonth", () => {
     const rows = buildDayRows({
       rangeStart: dateKeyToDate("2026-01-01"),
       rangeEnd: dateKeyToDate("2026-12-31"),
-      records: [record("2026-10-01", { outMinutes: 20 * H })],
+      records: [record("2026-10-01", { outMinutes: 19 * H })],
       schedule,
       now,
       trackingStartKey: "2026-10-01",
@@ -140,10 +139,8 @@ describe("summarizeByMonth", () => {
 });
 
 describe("leaveAtMinutes", () => {
-  it("is entry + expected + break", () => {
-    expect(leaveAtMinutes({ entryMinutes: 9 * H, expectedMinutes: 9 * H, breakMinutes: 60 })).toBe(
-      19 * H
-    );
-    expect(leaveAtMinutes({ entryMinutes: null, expectedMinutes: 9 * H, breakMinutes: 60 })).toBeNull();
+  it("is entry + expected hours", () => {
+    expect(leaveAtMinutes({ entryMinutes: 9 * H, expectedMinutes: 9 * H })).toBe(18 * H);
+    expect(leaveAtMinutes({ entryMinutes: null, expectedMinutes: 9 * H })).toBeNull();
   });
 });

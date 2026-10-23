@@ -41,7 +41,6 @@ export async function GET(req: NextRequest) {
       },
       schedule: {
         expectedDailyMinutes: schedule.expectedDailyMinutes,
-        breakMinutes: schedule.breakMinutes,
         halfDayMinutes: schedule.halfDayMinutes,
         workStart: minutesToClock(schedule.workStartMinutes, "24h"),
         workEnd: minutesToClock(schedule.workEndMinutes, "24h"),

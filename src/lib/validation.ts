@@ -34,7 +34,6 @@ export const attendanceSchema = z
 
 export const scheduleSchema = z.object({
   expectedDailyMinutes: z.number().int().min(60).max(1440),
-  breakMinutes: z.number().int().min(0).max(720),
   halfDayMinutes: z
     .number({ invalid_type_error: "Enter the half-day hours" })
     .int()

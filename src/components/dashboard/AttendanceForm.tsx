@@ -127,8 +127,7 @@ export function AttendanceForm({
               <span>
                 <span className="block text-sm font-medium">Half day</span>
                 <span className="block text-xs text-muted-foreground">
-                  Expected working time is {minutesToDuration(halfDayMinutes)}, with no break
-                  deducted.
+                  Expected working time is {minutesToDuration(halfDayMinutes)}.
                 </span>
               </span>
             </label>
