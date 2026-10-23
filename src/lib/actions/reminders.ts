@@ -2,16 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/session";
+import { requireUserId } from "@/lib/auth";
 import { getZonedNow } from "@/lib/time";
 import { claimReminder, isPushConfigured, sendPushToUser } from "@/lib/push";
 import { pushSubscriptionSchema } from "@/lib/validation";
-
-async function requireUserId(): Promise<string> {
-  const session = await getSession();
-  if (!session) throw new Error("Not authenticated");
-  return session.userId;
-}
 
 export async function savePushSubscriptionAction(subscription: unknown): Promise<boolean> {
   const userId = await requireUserId();

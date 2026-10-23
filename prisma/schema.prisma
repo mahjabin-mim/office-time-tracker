@@ -19,6 +19,8 @@ model User {
   remindClockIn  Boolean  @default(false)
   remindLeave    Boolean  @default(true)
   remindClockOut Boolean  @default(true)
+  /// Stamped into session cookies; bumping it signs the user out on every device.
+  sessionVersion Int      @default(0)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -94,4 +96,17 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+/// Failed password logins, used to slow down password guessing. Pruned after a day.
+/// Not linked to User: attempts for emails without an account are limited too.
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  email     String
+  ip        String
+  createdAt DateTime @default(now())
+
+  @@index([email, createdAt])
+  @@index([ip, createdAt])
+  @@index([createdAt])
 }

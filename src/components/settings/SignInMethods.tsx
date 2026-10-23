@@ -1,8 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
-import { KeyRound } from "lucide-react";
-import { disconnectGoogleAction } from "@/lib/actions/settings";
+import { useActionState, useState } from "react";
+import { KeyRound, LogOut } from "lucide-react";
+import { disconnectGoogleAction, logoutAllDevicesAction } from "@/lib/actions/settings";
+import { Button } from "@/components/ui/Button";
 import { GoogleIcon } from "@/components/auth/GoogleButton";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
@@ -52,6 +53,43 @@ export function SignInMethods({
           )
         }
       />
+
+      <LogoutEverywhere />
+    </div>
+  );
+}
+
+function LogoutEverywhere() {
+  const [confirming, setConfirming] = useState(false);
+
+  return (
+    <div className="mt-2 rounded-xl border border-border px-3.5 py-3">
+      <p className="text-sm font-medium">Signed in somewhere you don&apos;t recognise?</p>
+      <p className="text-xs text-muted-foreground">
+        Log out on every phone, tablet, and computer, including this one.
+      </p>
+      {confirming ? (
+        <form action={logoutAllDevicesAction} className="mt-3 flex flex-wrap items-center gap-2">
+          <SubmitButton variant="danger" size="sm" pendingLabel="Logging out…">
+            <LogOut className="h-3.5 w-3.5" />
+            Yes, log out everywhere
+          </SubmitButton>
+          <Button type="button" variant="ghost" size="sm" onClick={() => setConfirming(false)}>
+            Cancel
+          </Button>
+        </form>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="mt-3"
+          onClick={() => setConfirming(true)}
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          Log out of all devices
+        </Button>
+      )}
     </div>
   );
 }

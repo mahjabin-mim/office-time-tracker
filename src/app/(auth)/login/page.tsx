@@ -7,7 +7,13 @@ import { GOOGLE_ERROR_MESSAGES } from "@/lib/google";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string; deleted?: string; reset?: string }>;
+  searchParams: Promise<{
+    error?: string;
+    deleted?: string;
+    reset?: string;
+    expired?: string;
+    signedout?: string;
+  }>;
 }) {
   const params = await searchParams;
   const googleError = params.error ? GOOGLE_ERROR_MESSAGES[params.error] : undefined;
@@ -22,6 +28,12 @@ export default async function LoginPage({
       <div className="mt-6 space-y-5">
         {params.deleted && (
           <Alert variant="success">Your account and all of its data have been deleted.</Alert>
+        )}
+        {params.signedout && (
+          <Alert variant="success">You&apos;ve been logged out on all your devices.</Alert>
+        )}
+        {params.expired && (
+          <Alert>Your session ended, for example after a password change. Please log in again.</Alert>
         )}
         {params.reset && (
           <Alert variant="success">Your password has been updated. Log in with your new password.</Alert>

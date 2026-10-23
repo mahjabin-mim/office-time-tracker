@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { getAuthenticatedUser } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 import { buildDayRows, type DayRow } from "@/lib/calendar";
 import { DEFAULT_HALF_DAY_MINUTES, addDays, getZonedNow } from "@/lib/time";
@@ -10,14 +11,16 @@ export type { DayRow, PeriodSummary } from "@/lib/calendar";
 export { summarizeRows } from "@/lib/calendar";
 
 export async function getCurrentUser() {
-  const session = await getSession();
-  if (!session) return null;
-  return db.user.findUnique({ where: { id: session.userId } });
+  return getAuthenticatedUser();
 }
 
 export async function requireCurrentUser() {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    // A revoked or orphaned cookie still passes the middleware's signature check, so it has to
+    // be cleared (which only a route handler can do) or /login would bounce back here forever.
+    redirect((await getSession()) ? "/api/auth/signout" : "/login");
+  }
   return user;
 }
 

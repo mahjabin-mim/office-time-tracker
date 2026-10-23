@@ -5,6 +5,12 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { DEFAULT_SCHEDULE } from "@/lib/data";
 import { createSession, destroySession } from "@/lib/session";
+import {
+  checkLoginAllowed,
+  clearFailedLogins,
+  getClientIp,
+  recordFailedLogin,
+} from "@/lib/login-attempts";
 import { isValidTimeZone } from "@/lib/time";
 import { loginSchema, signupSchema } from "@/lib/validation";
 
@@ -58,7 +64,7 @@ export async function signupAction(
     },
   });
 
-  await createSession(user.id, false);
+  await createSession(user, false);
   redirect("/dashboard");
 }
 
@@ -82,8 +88,21 @@ export async function loginAction(
     return { fieldErrors };
   }
 
-  const user = await db.user.findUnique({ where: { email: parsed.data.email } });
+  const { email } = parsed.data;
+  const ip = await getClientIp();
+
+  // Checked before the password, so a locked account can't be probed further.
+  const lock = await checkLoginAllowed(email, ip);
+  if (lock.locked) {
+    const minutes = lock.retryAfterMinutes;
+    return {
+      error: `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}, or reset your password.`,
+    };
+  }
+
+  const user = await db.user.findUnique({ where: { email } });
   if (!user) {
+    await recordFailedLogin(email, ip);
     return { error: "Invalid email or password" };
   }
   if (!user.passwordHash) {
@@ -92,10 +111,12 @@ export async function loginAction(
 
   const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
   if (!valid) {
+    await recordFailedLogin(email, ip);
     return { error: "Invalid email or password" };
   }
 
-  await createSession(user.id, parsed.data.remember);
+  await clearFailedLogins(email);
+  await createSession(user, parsed.data.remember);
   redirect("/dashboard");
 }
 

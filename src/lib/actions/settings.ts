@@ -4,7 +4,8 @@ import bcrypt from "bcryptjs";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { destroySession, getSession } from "@/lib/session";
+import { requireUserId } from "@/lib/auth";
+import { createSession, destroySession, getSession } from "@/lib/session";
 import { clockToMinutes, isValidTimeZone } from "@/lib/time";
 import {
   deleteAccountSchema,
@@ -19,12 +20,6 @@ export type SettingsFormState = {
   fieldErrors?: Record<string, string>;
   success?: boolean;
 } | null;
-
-async function requireUserId(): Promise<string> {
-  const session = await getSession();
-  if (!session) throw new Error("Not authenticated");
-  return session.userId;
-}
 
 export async function updateScheduleAction(
   _prevState: SettingsFormState,
@@ -170,10 +165,24 @@ export async function changePasswordAction(
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
-  await db.user.update({ where: { id: userId }, data: { passwordHash } });
+  // Bumping the version signs out every other device; this one gets a fresh cookie.
+  const updated = await db.user.update({
+    where: { id: userId },
+    data: { passwordHash, sessionVersion: { increment: 1 } },
+  });
+  const session = await getSession();
+  await createSession(updated, session?.remember ?? false);
 
   revalidatePath("/dashboard/settings");
   return { success: true };
+}
+
+/** Signs the user out everywhere, including this device. */
+export async function logoutAllDevicesAction(): Promise<void> {
+  const userId = await requireUserId();
+  await db.user.update({ where: { id: userId }, data: { sessionVersion: { increment: 1 } } });
+  await destroySession();
+  redirect("/login?signedout=all");
 }
 
 export async function disconnectGoogleAction(): Promise<SettingsFormState> {

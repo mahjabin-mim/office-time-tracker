@@ -13,7 +13,9 @@ export function PasswordForm({ hasPassword }: { hasPassword: boolean }) {
   return (
     <form action={formAction} className="space-y-4">
       {state?.error && <Alert>{state.error}</Alert>}
-      {state?.success && <Alert variant="success">Password saved successfully.</Alert>}
+      {state?.success && (
+        <Alert variant="success">Password saved. You&apos;ve been signed out on your other devices.</Alert>
+      )}
       {!hasPassword && !state?.success && (
         <p className="text-sm text-muted-foreground">
           You sign in with Google. Set a password to also log in with your email address.

@@ -102,7 +102,11 @@ export async function resetPasswordAction(
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
   await db.$transaction([
-    db.user.update({ where: { id: record.userId }, data: { passwordHash } }),
+    // A reset signs out every device, in case someone else had access.
+    db.user.update({
+      where: { id: record.userId },
+      data: { passwordHash, sessionVersion: { increment: 1 } },
+    }),
     db.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
     db.passwordResetToken.deleteMany({ where: { userId: record.userId, id: { not: record.id } } }),
   ]);

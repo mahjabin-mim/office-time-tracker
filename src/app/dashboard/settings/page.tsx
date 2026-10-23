@@ -115,8 +115,8 @@ export default async function SettingsPage({
         <Reveal delay={0.25} className="h-full">
           <SettingsSection
             icon={<Link2 className="h-4 w-4" />}
-            title="Sign-in methods"
-            description="Ways you can log in to your account."
+            title="Sign-in & security"
+            description="How you log in, and where you're signed in."
           >
             <SignInMethods
               email={user.email}

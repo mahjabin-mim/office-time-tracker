@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
-import { getSession } from "@/lib/session";
+import { requireUserId } from "@/lib/auth";
 import { clockToMinutes, dateKeyToDate, getZonedNow } from "@/lib/time";
 import { attendanceSchema } from "@/lib/validation";
 
@@ -11,12 +11,6 @@ export type AttendanceFormState = {
   fieldErrors?: Record<string, string>;
   success?: boolean;
 } | null;
-
-async function requireUserId(): Promise<string> {
-  const session = await getSession();
-  if (!session) throw new Error("Not authenticated");
-  return session.userId;
-}
 
 async function getNowForUser(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId }, select: { timezone: true } });

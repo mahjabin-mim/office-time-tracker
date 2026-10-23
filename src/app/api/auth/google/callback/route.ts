@@ -74,6 +74,6 @@ export async function GET(req: NextRequest) {
         });
   }
 
-  await createSession(user.id, true);
+  await createSession(user, true);
   redirect("/dashboard");
 }
