@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Clock3, LayoutDashboard, CalendarRange, ChartColumnBig, Settings, LogOut } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { logoutAction } from "@/lib/actions/auth";
+import { GetAppButton } from "@/components/app/GetAppButton";
 
 export const NAV_ITEMS = [
   { href: "/dashboard", label: "Dashboard", shortLabel: "Today", icon: LayoutDashboard },
@@ -57,6 +58,10 @@ function SidebarContent() {
           );
         })}
       </nav>
+
+      <div className="px-3 pb-3">
+        <GetAppButton variant="card" />
+      </div>
 
       <form action={logoutAction} className="border-t border-border p-3">
         <button

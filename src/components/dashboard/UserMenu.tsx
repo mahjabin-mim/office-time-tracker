@@ -3,12 +3,17 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, LogOut, Settings } from "lucide-react";
+import { ChevronDown, LogOut, Settings, Smartphone } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { logoutAction } from "@/lib/actions/auth";
+import { useAppContext } from "@/components/app/useAppContext";
+import { GetAppDialog } from "@/components/app/GetAppDialog";
 
 export function UserMenu({ name, email }: { name: string; email: string }) {
   const [open, setOpen] = useState(false);
+  // Owned here, outside the menu, so closing the menu doesn't also close the dialog.
+  const [appDialogOpen, setAppDialogOpen] = useState(false);
+  const app = useAppContext();
   const containerRef = useRef<HTMLDivElement>(null);
   const initial = name.trim().charAt(0).toUpperCase() || "?";
 
@@ -73,6 +78,20 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
               <Settings className="h-4 w-4 text-muted-foreground" />
               Settings
             </Link>
+            {app.ready && !app.inApp && (
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  setAppDialogOpen(true);
+                }}
+                className={itemClass}
+              >
+                <Smartphone className="h-4 w-4 text-muted-foreground" />
+                Get the mobile app
+              </button>
+            )}
             <form action={logoutAction}>
               <button type="submit" role="menuitem" className={cn(itemClass, "text-less")}>
                 <LogOut className="h-4 w-4" />
@@ -82,6 +101,11 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
           </motion.div>
         )}
       </AnimatePresence>
+      <GetAppDialog
+        open={appDialogOpen}
+        onClose={() => setAppDialogOpen(false)}
+        platform={app.platform}
+      />
     </div>
   );
 }

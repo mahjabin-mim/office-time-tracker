@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   icons: {
     apple: "/apple-touch-icon.png",
   },
+  // Older iOS versions only open home-screen apps full screen with Apple's original tag.
+  other: { "apple-mobile-web-app-capable": "yes" },
 };
 
 export const viewport: Viewport = {

@@ -72,6 +72,7 @@ Track daily office entry/out times and see your monthly worked-time balance at a
 - **Google sign-in**, with linking/unlinking from Settings → Sign-in methods
 - **Forgot password**: emails a single-use reset link that expires after an hour
 - **Account deletion** from Settings → Delete account (removes the user, schedule, and all attendance)
+- **Mobile apps**: an Android app (download from the site) and iPhone/iPad via Add to Home Screen
 - Light/dark themes, installable PWA, and animations that respect the OS "reduce motion" setting
 
 ## Google sign-in
@@ -111,6 +112,24 @@ Reminders are Web Push notifications, so they reach you even when the app is clo
 
 On iPhone, notifications only work after adding the app to the Home Screen. While the app is open,
 the "time to leave" reminder also fires on time from the page itself.
+
+## Mobile apps
+
+- **Android**: a Trusted Web Activity built with Bubblewrap that opens the live site full screen.
+  `https://officetimetracker.vercel.app/download/android` always redirects to the APK attached to
+  the latest GitHub release. The app launches with `?source=app`, which hides the site's
+  "Get the mobile app" links inside it. `public/.well-known/assetlinks.json` holds the signing
+  key's fingerprint so Android shows it without a browser bar.
+- **iPhone/iPad**: Safari → Share → Add to Home Screen. It runs full screen as a home-screen web
+  app (detected via `navigator.standalone`), and push reminders work on iOS 16.4+. A native App
+  Store build would need Xcode and a paid Apple Developer account.
+
+To publish a new Android version, rebuild it (see the separate `office-time-tracker-android`
+project) and attach it to a new release:
+
+```bash
+gh release create v1.0.2 OfficeTimeTracker.apk --title "Android app 1.0.2" --notes "…"
+```
 
 ## Tests
 
