@@ -62,27 +62,6 @@ describe("buildDayRows", () => {
     expect(row.status).toBe("on-target");
   });
 
-  it("treats a half day ticked on a day off as a half working day", () => {
-    const rows = rowsFor([record("2026-10-16", { isHalfDay: true, outMinutes: 13 * H + 30 })]); // Friday
-    const friday = rows.find((r) => r.dateKey === "2026-10-16")!;
-    expect(friday).toMatchObject({
-      isScheduledWorkingDay: false,
-      isWorkingDay: true,
-      status: "on-target",
-      expectedMinutes: 270,
-      breakMinutes: 0,
-    });
-    const summary = summarizeRows(rows.filter((r) => r.dateKey === "2026-10-16"));
-    expect(summary).toMatchObject({ halfDaysCount: 1, daysCompletedCount: 1, daysOffWorkedCount: 0 });
-  });
-
-  it("keeps plain work on a day off as all extra", () => {
-    const [row] = rowsFor([record("2026-10-16", { entryMinutes: 10 * H, outMinutes: 12 * H })]).filter(
-      (r) => r.dateKey === "2026-10-16"
-    );
-    expect(row).toMatchObject({ isWorkingDay: false, status: "extra", differenceMinutes: 2 * H });
-  });
-
   it("shows days before signup as not tracked rather than missing", () => {
     const rows = rowsFor([], "2026-10-20");
     expect(rows.find((r) => r.dateKey === "2026-10-19")!.status).toBe("not-tracked");

@@ -34,10 +34,7 @@ export interface DayRow {
   leaveType: LeaveType | null;
   isToday: boolean;
   isFuture: boolean;
-  /** Expected to work: a scheduled working day, or a day off marked as a half day. */
   isWorkingDay: boolean;
-  /** Whether the weekly schedule has this weekday as a working day. */
-  isScheduledWorkingDay: boolean;
   status: DayStatus;
   workedMinutes: number | null;
   expectedMinutes: number;
@@ -63,9 +60,7 @@ export function buildDayRows(params: {
     const dateKey = toDateKey(date);
     const record = byKey.get(dateKey);
     const leaveType = isLeaveType(record?.leaveType) ? record.leaveType : null;
-    const scheduled = isWorkingDay(date, workingDaysSet);
-    // Ticking "Half day" on a day off makes it a half working day (e.g. a half-day Saturday).
-    const working = scheduled || (record?.isHalfDay ?? false);
+    const working = isWorkingDay(date, workingDaysSet);
     const computation = computeDayStatus({
       dateKey,
       todayKey: now.dateKey,
@@ -90,7 +85,6 @@ export function buildDayRows(params: {
       isToday: dateKey === now.dateKey,
       isFuture: dateKey > now.dateKey,
       isWorkingDay: working,
-      isScheduledWorkingDay: scheduled,
       status: computation.status,
       workedMinutes: computation.workedMinutes,
       expectedMinutes: computation.expectedMinutes,
