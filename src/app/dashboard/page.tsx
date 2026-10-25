@@ -8,7 +8,7 @@ import {
   requireCurrentUser,
   summarizeRows,
 } from "@/lib/data";
-import { formatDayLabel } from "@/lib/time";
+import { formatDayLabel, minutesToClock } from "@/lib/time";
 import { TodayCard } from "@/components/dashboard/TodayCard";
 import { ExtraHoursCard } from "@/components/dashboard/ExtraHoursCard";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
@@ -76,7 +76,7 @@ export default async function DashboardPage() {
             </Link>
           }
         />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           <Reveal delay={0.1}>
             <SummaryCard
               label="Monthly balance"
@@ -111,6 +111,18 @@ export default async function DashboardPage() {
               }
               hint="Across completed days"
               tone="brand"
+            />
+          </Reveal>
+          <Reveal delay={0.3}>
+            <SummaryCard
+              label="Late entries"
+              value={<AnimatedNumber value={summary.lateEntriesCount} format="count" />}
+              hint={
+                schedule.lateAfterMinutes != null
+                  ? `After ${minutesToClock(schedule.lateAfterMinutes, timeFormat)}`
+                  : "Set a late time in Settings"
+              }
+              tone={summary.lateEntriesCount > 0 ? "less" : "neutral"}
             />
           </Reveal>
         </div>
