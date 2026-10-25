@@ -162,4 +162,5 @@ Deployed on Vercel with a Neon Postgres database at https://officetimetracker.ve
 `CRON_SECRET`, `APP_URL`, and the `SMTP_*` settings are set as environment variables on the Vercel
 project.
 
-After pulling schema changes, run `npm run db:push` against the production database before deploying.
+The Vercel build (`vercel.json`) runs `prisma db push` before `next build`, so schema changes reach the
+production database on each deploy. It refuses destructive changes, so those need a manual `npm run db:push`.
