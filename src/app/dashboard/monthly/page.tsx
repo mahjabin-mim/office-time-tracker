@@ -11,7 +11,7 @@ import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { ExportLink } from "@/components/dashboard/ExportLink";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { BalanceHero } from "@/components/dashboard/BalanceHero";
-import { AttendanceTable } from "@/components/dashboard/AttendanceTable";
+import { MonthlyAttendance } from "@/components/dashboard/MonthlyAttendance";
 import { MonthlyChart } from "@/components/dashboard/MonthlyChart";
 import { Reveal } from "@/components/ui/Reveal";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
@@ -124,7 +124,7 @@ export default async function MonthlySummaryPage({
           Monthly Attendance
         </h2>
         <Reveal delay={0.35}>
-          <AttendanceTable
+          <MonthlyAttendance
             rows={rows}
             timeFormat={timeFormat}
             halfDayMinutes={schedule.halfDayMinutes}
