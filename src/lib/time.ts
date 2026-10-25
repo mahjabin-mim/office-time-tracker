@@ -80,6 +80,44 @@ export function computeWorkedMinutes(
   return out - entryMinutes;
 }
 
+/** A working-day entry strictly after the user's late-entry time; always false when it isn't set. */
+export function isLateEntry(
+  entryMinutes: number | null | undefined,
+  lateAfterMinutes: number | null | undefined
+): boolean {
+  return entryMinutes != null && lateAfterMinutes != null && entryMinutes > lateAfterMinutes;
+}
+
+/** Last minute of a day (11:59 PM). An extra-hours session still open then rolls into the next day. */
+export const END_OF_DAY_MINUTES = 1439;
+
+export interface ExtraComputation {
+  /** Completed minutes, or the running total for a session that's still open today. */
+  minutes: number | null;
+  inProgress: boolean;
+}
+
+/**
+ * Extra-hours session for a day. It never wraps past midnight on its own: a session still open
+ * when the day ends is closed at 11:59 PM and continued on the next day (see settleExtraSessions).
+ */
+export function computeExtra(params: {
+  dateKey: string;
+  todayKey: string;
+  nowMinutes: number;
+  extraEntryMinutes: number | null | undefined;
+  extraOutMinutes: number | null | undefined;
+}): ExtraComputation {
+  const { extraEntryMinutes: entry, extraOutMinutes: out } = params;
+  if (entry == null || out == null) {
+    if (entry != null && params.dateKey === params.todayKey) {
+      return { minutes: Math.max(0, params.nowMinutes - entry), inProgress: true };
+    }
+    return { minutes: null, inProgress: false };
+  }
+  return { minutes: Math.max(0, out - entry), inProgress: false };
+}
+
 // Calendar days are represented as UTC midnight, so a given day maps to the same Date on any
 // server or browser regardless of its local time zone. Always read them with getUTC*().
 

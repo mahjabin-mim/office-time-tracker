@@ -42,6 +42,8 @@ export async function GET(req: NextRequest) {
       schedule: {
         expectedDailyMinutes: schedule.expectedDailyMinutes,
         halfDayMinutes: schedule.halfDayMinutes,
+        lateAfter:
+          schedule.lateAfterMinutes != null ? minutesToClock(schedule.lateAfterMinutes, "24h") : null,
         workStart: minutesToClock(schedule.workStartMinutes, "24h"),
         workEnd: minutesToClock(schedule.workEndMinutes, "24h"),
         workingDays: WEEKDAYS.filter((_, i) => workingDays.has(i)),
@@ -52,6 +54,8 @@ export async function GET(req: NextRequest) {
         out: a.outMinutes != null ? minutesToClock(a.outMinutes, "24h") : null,
         isHalfDay: a.isHalfDay,
         leaveType: a.leaveType,
+        extraEntry: a.extraEntryMinutes != null ? minutesToClock(a.extraEntryMinutes, "24h") : null,
+        extraOut: a.extraOutMinutes != null ? minutesToClock(a.extraOutMinutes, "24h") : null,
       })),
     };
     return download(

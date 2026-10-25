@@ -37,12 +37,12 @@ describe("rowsToCsv", () => {
   const lines = rowsToCsv(rows).trimEnd().split("\r\n");
 
   it("has a header and one line per day, using CRLF", () => {
-    expect(lines[0]).toBe("Date,Weekday,Entry,Out,Half day,Worked,Expected,Difference,Status");
+    expect(lines[0]).toBe("Date,Weekday,Entry,Out,Half day,Worked,Expected,Difference,Extra entry,Extra out,Extra hours,Late,Status");
     expect(lines).toHaveLength(3);
   });
 
   it("writes leave and worked days", () => {
-    expect(lines[1]).toBe("2026-10-21,Wednesday,,,No,,,,Sick leave");
-    expect(lines[2]).toBe("2026-10-22,Thursday,09:00,18:15,No,9:15,9:00,+0:15,Extra");
+    expect(lines[1]).toBe("2026-10-21,Wednesday,,,No,,,,,,,,Sick leave");
+    expect(lines[2]).toBe("2026-10-22,Thursday,09:00,18:15,No,9:15,9:00,+0:15,,,,,Extra");
   });
 });

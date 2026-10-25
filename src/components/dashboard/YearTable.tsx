@@ -33,6 +33,7 @@ export function YearTable({ year, months }: { year: number; months: MonthBreakdo
                 {summary.daysCompletedCount} days
                 {summary.halfDaysCount > 0 && ` · ${summary.halfDaysCount} half`}
                 {summary.leaveDaysCount > 0 && ` · ${summary.leaveDaysCount} leave`}
+                {summary.lateEntriesCount > 0 && ` · ${summary.lateEntriesCount} late`}
               </div>
               <span className={cn("text-sm font-semibold tabular-nums", balanceClass(summary.balanceMinutes))}>
                 {hasData ? minutesToDurationSigned(summary.balanceMinutes) : "—"}
@@ -44,7 +45,7 @@ export function YearTable({ year, months }: { year: number; months: MonthBreakdo
       </ul>
 
       <div className="scrollbar-thin hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[720px] text-sm">
+        <table className="w-full min-w-[780px] text-sm">
           <thead>
             <tr className="border-b border-border bg-surface/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-5 py-3 font-medium">Month</th>
@@ -54,6 +55,7 @@ export function YearTable({ year, months }: { year: number; months: MonthBreakdo
               <th className="px-3 py-3 font-medium">Days</th>
               <th className="px-3 py-3 font-medium">Half days</th>
               <th className="px-3 py-3 font-medium">Leave</th>
+              <th className="px-3 py-3 font-medium">Late</th>
               <th className="px-5 py-3" />
             </tr>
           </thead>
@@ -90,6 +92,9 @@ export function YearTable({ year, months }: { year: number; months: MonthBreakdo
                 </td>
                 <td className="whitespace-nowrap px-3 py-3 tabular-nums text-muted-foreground">
                   {summary.leaveDaysCount || "—"}
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 tabular-nums text-muted-foreground">
+                  {summary.lateEntriesCount || "—"}
                 </td>
                 <td className="whitespace-nowrap px-5 py-3 text-right">
                   <Link

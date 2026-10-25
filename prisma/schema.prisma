@@ -41,6 +41,7 @@ model WorkSchedule {
   workStartMinutes     Int      @default(540)
   workEndMinutes       Int      @default(1140)
   workingDays          String   @default("0,1,2,3,4")
+  lateAfterMinutes     Int? // entries after this time of day count as late; null = not tracked
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 }
@@ -53,7 +54,10 @@ model Attendance {
   entryMinutes Int?
   outMinutes   Int?
   isHalfDay    Boolean  @default(false)
-  leaveType    String? // "leave" | "sick" | "holiday"; times are ignored when set
+  leaveType    String? // "leave" | "holiday" (legacy "sick" is still read); times are ignored when set
+  /// Optional extra-hours session, separate from the regular entry/out. Every minute counts as extra.
+  extraEntryMinutes Int?
+  extraOutMinutes   Int?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

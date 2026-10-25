@@ -1,6 +1,6 @@
 import { CalendarPlus, Pencil, Plus } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { DayOffWorkTag, HalfDayTag, StatusBadge } from "@/components/ui/StatusBadge";
+import { DayOffWorkTag, HalfDayTag, LateTag, StatusBadge } from "@/components/ui/StatusBadge";
 import { AttendanceDialogButton } from "@/components/dashboard/AttendanceDialogButton";
 import { cn } from "@/lib/cn";
 import type { DayRow } from "@/lib/calendar";
@@ -32,10 +32,15 @@ function hasTimes(row: DayRow) {
   return row.entryMinutes != null || row.outMinutes != null;
 }
 
+function hasRecordedDay(row: DayRow) {
+  return hasTimes(row) || row.extraEntryMinutes != null || row.leaveType != null;
+}
+
 function Tags({ row }: { row: DayRow }) {
   return (
     <>
       <StatusBadge status={row.status} leaveType={row.leaveType} />
+      {row.isLate && <LateTag />}
       {row.isHalfDay && row.isWorkingDay && !row.leaveType && <HalfDayTag />}
       {!row.isWorkingDay && hasTimes(row) && !row.leaveType && <DayOffWorkTag />}
     </>
@@ -51,7 +56,7 @@ function EditButton({
   halfDayMinutes: number;
   compact?: boolean;
 }) {
-  const hasRecord = hasTimes(row) || row.leaveType != null;
+  const hasRecord = hasRecordedDay(row);
   const label = hasRecord ? "Edit" : row.isFuture ? "Plan" : "Add";
   const Icon = hasRecord ? Pencil : row.isFuture ? CalendarPlus : Plus;
   return (
@@ -118,6 +123,16 @@ export function AttendanceTable({
                   )}
                 </p>
               )}
+              {row.extraEntryMinutes != null && (
+                <p className="mt-0.5 text-xs tabular-nums text-extra">
+                  <span className="whitespace-nowrap">
+                    Extra {clock(row.extraEntryMinutes)} → {row.extraInProgress ? "running" : clock(row.extraOutMinutes)}
+                  </span>
+                  {row.extraMinutes != null && (
+                    <span className="whitespace-nowrap"> · {minutesToDuration(row.extraMinutes)}</span>
+                  )}
+                </p>
+              )}
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1.5">
               {row.differenceMinutes != null && (
@@ -132,7 +147,7 @@ export function AttendanceTable({
       </ul>
 
       <div className="scrollbar-thin hidden overflow-x-auto md:block">
-        <table className="w-full min-w-[760px] text-sm">
+        <table className="w-full min-w-[860px] text-sm">
           <thead>
             <tr className="border-b border-border bg-surface/60 text-left text-xs uppercase tracking-wide text-muted-foreground">
               <th className="px-5 py-3 font-medium">Date</th>
@@ -141,6 +156,7 @@ export function AttendanceTable({
               <th className="px-3 py-3 font-medium">Worked</th>
               <th className="px-3 py-3 font-medium">Expected</th>
               <th className="px-3 py-3 font-medium">Difference</th>
+              <th className="px-3 py-3 font-medium">Extra hours</th>
               <th className="px-3 py-3 font-medium">Status</th>
               <th className="px-5 py-3 text-right font-medium">Action</th>
             </tr>
@@ -183,6 +199,16 @@ export function AttendanceTable({
                   {row.differenceMinutes != null
                     ? minutesToDurationSigned(row.differenceMinutes)
                     : "—"}
+                </td>
+                <td className="whitespace-nowrap px-3 py-3 tabular-nums">
+                  {row.extraMinutes != null ? (
+                    <span className="font-medium text-extra">
+                      {minutesToDuration(row.extraMinutes)}
+                      {row.extraInProgress && " …"}
+                    </span>
+                  ) : (
+                    "—"
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-3 py-3">
                   <div className="flex items-center gap-1.5">

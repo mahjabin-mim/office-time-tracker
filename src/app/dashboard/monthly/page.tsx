@@ -5,7 +5,7 @@ import {
   requireCurrentUser,
   summarizeRows,
 } from "@/lib/data";
-import { formatMonthLabel } from "@/lib/time";
+import { formatMonthLabel, minutesToClock } from "@/lib/time";
 import { parsePeriod } from "@/lib/period";
 import { PeriodSelector } from "@/components/dashboard/PeriodSelector";
 import { ExportLink } from "@/components/dashboard/ExportLink";
@@ -58,6 +58,22 @@ export default async function MonthlySummaryPage({
         .join(" · "),
     },
     { label: "Half days", value: summary.halfDaysCount, format: "count" as const },
+    {
+      label: "Extra hours",
+      value: summary.totalExtraHourMinutes,
+      format: "duration" as const,
+      hint: "Counted in your balance",
+    },
+    {
+      label: "Late entries",
+      value: summary.lateEntriesCount,
+      format: "count" as const,
+      tone: summary.lateEntriesCount > 0 ? ("less" as const) : undefined,
+      hint:
+        schedule.lateAfterMinutes != null
+          ? `After ${minutesToClock(schedule.lateAfterMinutes, timeFormat)}`
+          : "Set a late time in Settings",
+    },
     { label: "Leave & holidays", value: summary.leaveDaysCount, format: "count" as const },
   ];
 

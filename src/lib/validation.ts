@@ -22,15 +22,37 @@ export const attendanceSchema = z
   .object({
     date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     // "work" records times; the others mark the whole day as leave or a holiday.
-    dayType: z.enum(["work", "leave", "sick", "holiday"]),
+    dayType: z.enum(["work", "leave", "holiday"]),
     entryTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     outTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     isHalfDay: z.boolean(),
+    // Extra hours are a separate session that can sit on any day type.
+    extraEntryTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
+    extraOutTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
   })
-  .refine((data) => data.dayType !== "work" || !!data.entryTime || !!data.outTime, {
-    message: "Enter at least an entry time or an out time",
-    path: ["entryTime"],
-  });
+  .refine(
+    (data) =>
+      data.dayType !== "work" ||
+      !!data.entryTime ||
+      !!data.outTime ||
+      !!data.extraEntryTime ||
+      !!data.extraOutTime,
+    {
+      message: "Enter at least an entry time or an out time",
+      path: ["entryTime"],
+    }
+  )
+  .refine((data) => !data.extraOutTime || !!data.extraEntryTime, {
+    message: "Add the extra hours entry time",
+    path: ["extraEntryTime"],
+  })
+  .refine(
+    (data) => !data.extraEntryTime || !data.extraOutTime || data.extraOutTime > data.extraEntryTime,
+    {
+      message: "Must be after the entry time. Sessions running past midnight continue on the next day.",
+      path: ["extraOutTime"],
+    }
+  );
 
 export const scheduleSchema = z.object({
   expectedDailyMinutes: z.number().int().min(60).max(1440),
@@ -44,6 +66,11 @@ export const scheduleSchema = z.object({
   workingDays: z
     .array(z.number().int().min(0).max(6))
     .min(1, "Select at least one working day"),
+});
+
+export const lateEntrySchema = z.object({
+  // null turns late-entry tracking off
+  lateAfterMinutes: z.number().int().min(0).max(1439).nullable(),
 });
 
 export const profileSchema = z.object({

@@ -13,6 +13,7 @@ import {
   preferencesSchema,
   profileSchema,
   scheduleSchema,
+  lateEntrySchema,
 } from "@/lib/validation";
 
 export type SettingsFormState = {
@@ -52,6 +53,34 @@ export async function updateScheduleAction(
     where: { userId },
     create: { userId, ...parsed.data, workingDays: parsed.data.workingDays.join(",") },
     update: { ...parsed.data, workingDays: parsed.data.workingDays.join(",") },
+  });
+
+  revalidatePath("/dashboard");
+  revalidatePath("/dashboard/monthly");
+  revalidatePath("/dashboard/yearly");
+  revalidatePath("/dashboard/settings");
+  return { success: true };
+}
+
+export async function updateLateEntryAction(
+  _prevState: SettingsFormState,
+  formData: FormData
+): Promise<SettingsFormState> {
+  const userId = await requireUserId();
+
+  const raw = String(formData.get("lateAfter") ?? "");
+  const lateAfterMinutes = raw ? clockToMinutes(raw) : null;
+  if (raw && lateAfterMinutes == null) {
+    return { fieldErrors: { lateAfter: "Enter a valid time" } };
+  }
+
+  const parsed = lateEntrySchema.safeParse({ lateAfterMinutes });
+  if (!parsed.success) return { fieldErrors: { lateAfter: "Enter a valid time" } };
+
+  await db.workSchedule.upsert({
+    where: { userId },
+    create: { userId, lateAfterMinutes: parsed.data.lateAfterMinutes },
+    update: { lateAfterMinutes: parsed.data.lateAfterMinutes },
   });
 
   revalidatePath("/dashboard");

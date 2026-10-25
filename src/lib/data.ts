@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 import { buildDayRows, type DayRow } from "@/lib/calendar";
+import { settleExtraSessions } from "@/lib/extra";
 import { DEFAULT_HALF_DAY_MINUTES, addDays, getZonedNow } from "@/lib/time";
 import { redirect } from "next/navigation";
 import type { User, WorkSchedule } from "@prisma/client";
@@ -49,6 +50,7 @@ export async function getRowsForRange(
   rangeStart: Date,
   rangeEnd: Date
 ): Promise<DayRow[]> {
+  await settleExtraSessions(user.id, getUserNow(user));
   const records = await db.attendance.findMany({
     where: {
       userId: user.id,

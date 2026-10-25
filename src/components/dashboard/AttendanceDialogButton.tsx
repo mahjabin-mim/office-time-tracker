@@ -25,7 +25,11 @@ export function AttendanceDialogButton({
   className?: string;
 }) {
   const [open, setOpen] = useState(false);
-  const hasRecord = row.entryMinutes != null || row.outMinutes != null || row.leaveType != null;
+  const hasRecord =
+    row.entryMinutes != null ||
+    row.outMinutes != null ||
+    row.extraEntryMinutes != null ||
+    row.leaveType != null;
 
   return (
     <>
@@ -40,7 +44,7 @@ export function AttendanceDialogButton({
         description={
           row.isFuture
             ? "Mark an upcoming day as leave or a holiday."
-            : "Record your entry and out time, or mark the day as leave."
+            : "Record your entry and out time, add extra hours, or mark the day as leave."
         }
       >
         <AttendanceForm

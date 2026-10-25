@@ -10,6 +10,7 @@ import {
 } from "@/lib/data";
 import { formatDayLabel } from "@/lib/time";
 import { TodayCard } from "@/components/dashboard/TodayCard";
+import { ExtraHoursCard } from "@/components/dashboard/ExtraHoursCard";
 import { SummaryCard } from "@/components/dashboard/SummaryCard";
 import { RecentAttendanceList } from "@/components/dashboard/RecentAttendanceList";
 import { Reveal } from "@/components/ui/Reveal";
@@ -52,6 +53,13 @@ export default async function DashboardPage() {
             halfDayMinutes={schedule.halfDayMinutes}
             nowMinutes={now.minutes}
             remindLeave={user.remindLeave}
+          />
+        </Reveal>
+        <Reveal delay={0.08} className="mt-3">
+          <ExtraHoursCard
+            row={todayRow}
+            timeFormat={timeFormat}
+            halfDayMinutes={schedule.halfDayMinutes}
           />
         </Reveal>
       </section>

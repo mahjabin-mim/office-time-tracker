@@ -97,6 +97,34 @@ export function HalfDayTag({ className }: { className?: string }) {
   );
 }
 
+export function LateTag({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full bg-less/15 px-2 py-0.5 text-[11px] font-semibold text-less",
+        className
+      )}
+      title="Entered after your late entry time"
+    >
+      Late
+    </span>
+  );
+}
+
+export function ExtraHoursTag({ className }: { className?: string }) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full bg-extra/15 px-2 py-0.5 text-[11px] font-semibold text-extra",
+        className
+      )}
+      title="Extra hours session recorded"
+    >
+      Extra hours
+    </span>
+  );
+}
+
 /** Marks time worked on a non-working day, which all counts as extra. */
 export function DayOffWorkTag({ className }: { className?: string }) {
   return (

@@ -3,11 +3,13 @@ import {
   addDays,
   clockToMinutes,
   computeDayStatus,
+  computeExtra,
   computeWorkedMinutes,
   dateKeyToDate,
   formatDayLabel,
   formatMonthLabel,
   getZonedNow,
+  isLateEntry,
   isLeaveType,
   isValidTimeZone,
   isWorkingDay,
@@ -230,5 +232,46 @@ describe("isLeaveType", () => {
     expect(isLeaveType("sick")).toBe(true);
     expect(isLeaveType("vacation")).toBe(false);
     expect(isLeaveType(null)).toBe(false);
+  });
+});
+
+describe("computeExtra", () => {
+  const base = { dateKey: "2026-10-22", todayKey: "2026-10-22", nowMinutes: 20 * H };
+
+  it("is empty with no session", () => {
+    expect(computeExtra({ ...base, extraEntryMinutes: null, extraOutMinutes: null })).toEqual({
+      minutes: null,
+      inProgress: false,
+    });
+  });
+
+  it("returns the length of a finished session", () => {
+    expect(computeExtra({ ...base, extraEntryMinutes: 18 * H, extraOutMinutes: 19 * H + 30 })).toEqual({
+      minutes: 90,
+      inProgress: false,
+    });
+    // the midnight carry-over: closed at 11:59 PM, continued from 12:00 AM
+    expect(computeExtra({ ...base, extraEntryMinutes: 22 * H, extraOutMinutes: 1439 })).toMatchObject({
+      minutes: 119,
+    });
+  });
+
+  it("runs live for an open session today and not for an open one on a past day", () => {
+    expect(computeExtra({ ...base, extraEntryMinutes: 18 * H, extraOutMinutes: null })).toEqual({
+      minutes: 2 * H,
+      inProgress: true,
+    });
+    expect(
+      computeExtra({ ...base, dateKey: "2026-10-21", extraEntryMinutes: 18 * H, extraOutMinutes: null })
+    ).toEqual({ minutes: null, inProgress: false });
+  });
+});
+
+describe("isLateEntry", () => {
+  it("is late only strictly after the set time", () => {
+    expect(isLateEntry(9 * H + 16, 9 * H + 15)).toBe(true);
+    expect(isLateEntry(9 * H + 15, 9 * H + 15)).toBe(false);
+    expect(isLateEntry(null, 9 * H)).toBe(false);
+    expect(isLateEntry(10 * H, null)).toBe(false);
   });
 });

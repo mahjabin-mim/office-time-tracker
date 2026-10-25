@@ -23,6 +23,10 @@ export function rowsToCsv(rows: DayRow[]): string {
     "Worked",
     "Expected",
     "Difference",
+    "Extra entry",
+    "Extra out",
+    "Extra hours",
+    "Late",
     "Status",
   ];
   const lines = rows.map((row) =>
@@ -35,6 +39,10 @@ export function rowsToCsv(rows: DayRow[]): string {
       hhmm(row.workedMinutes),
       row.expectedMinutes > 0 ? hhmm(row.expectedMinutes) : "",
       hhmm(row.differenceMinutes, true),
+      row.extraEntryMinutes != null ? minutesToClock(row.extraEntryMinutes, "24h") : "",
+      row.extraOutMinutes != null ? minutesToClock(row.extraOutMinutes, "24h") : "",
+      hhmm(row.extraInProgress ? null : row.extraMinutes),
+      row.isLate ? "Yes" : "",
       row.leaveType ? LEAVE_LABELS[row.leaveType] : STATUS_LABELS[row.status],
     ]
       .map(csvCell)

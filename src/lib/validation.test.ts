@@ -20,9 +20,32 @@ describe("attendanceSchema", () => {
   });
 
   it("allows leave and holidays without any times", () => {
-    for (const dayType of ["leave", "sick", "holiday"]) {
+    for (const dayType of ["leave", "holiday"]) {
       expect(attendanceSchema.safeParse({ ...base, dayType }).success).toBe(true);
     }
+  });
+
+  it("no longer accepts sick as a day type", () => {
+    expect(attendanceSchema.safeParse({ ...base, dayType: "sick" }).success).toBe(false);
+  });
+
+  it("validates extra hours times", () => {
+    const work = { ...base, dayType: "work", entryTime: "09:00" };
+    expect(attendanceSchema.safeParse({ ...work, extraEntryTime: "19:00" }).success).toBe(true);
+    expect(
+      attendanceSchema.safeParse({ ...work, extraEntryTime: "19:00", extraOutTime: "21:30" }).success
+    ).toBe(true);
+    // an out time needs an entry, and can't be before it (past-midnight sessions roll over)
+    expect(attendanceSchema.safeParse({ ...work, extraOutTime: "21:30" }).success).toBe(false);
+    expect(
+      attendanceSchema.safeParse({ ...work, extraEntryTime: "22:00", extraOutTime: "02:00" }).success
+    ).toBe(false);
+  });
+
+  it("lets a worked day hold only extra hours", () => {
+    expect(
+      attendanceSchema.safeParse({ ...base, dayType: "work", extraEntryTime: "19:00" }).success
+    ).toBe(true);
   });
 
   it("rejects unknown day types and malformed values", () => {

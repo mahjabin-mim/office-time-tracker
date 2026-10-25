@@ -1,6 +1,7 @@
 import {
   Bell,
   CalendarClock,
+  AlarmClock,
   Database,
   KeyRound,
   Link2,
@@ -14,6 +15,7 @@ import { SettingsSection } from "@/components/settings/SettingsSection";
 import { ProfileForm } from "@/components/settings/ProfileForm";
 import { PasswordForm } from "@/components/settings/PasswordForm";
 import { ScheduleForm } from "@/components/settings/ScheduleForm";
+import { LateEntryForm } from "@/components/settings/LateEntryForm";
 import { PreferencesForm } from "@/components/settings/PreferencesForm";
 import { SignInMethods } from "@/components/settings/SignInMethods";
 import { DataExport } from "@/components/settings/DataExport";
@@ -78,6 +80,16 @@ export default async function SettingsPage({
             description="Used to calculate your expected hours and daily balance."
           >
             <ScheduleForm schedule={schedule} />
+          </SettingsSection>
+        </Reveal>
+
+        <Reveal delay={0.18} className="lg:col-span-2">
+          <SettingsSection
+            icon={<AlarmClock className="h-4 w-4" />}
+            title="Late Entry"
+            description="Set the time after which an entry is marked late."
+          >
+            <LateEntryForm lateAfterMinutes={schedule.lateAfterMinutes} />
           </SettingsSection>
         </Reveal>
 

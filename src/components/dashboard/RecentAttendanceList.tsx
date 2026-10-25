@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/Card";
-import { DayOffWorkTag, HalfDayTag, StatusBadge } from "@/components/ui/StatusBadge";
+import { DayOffWorkTag, HalfDayTag, LateTag, StatusBadge } from "@/components/ui/StatusBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { History } from "lucide-react";
 import { cn } from "@/lib/cn";
@@ -61,6 +61,7 @@ export function RecentAttendanceList({
                 {row.isToday ? "Today" : formatShortDate(row.date)}
                 {row.isHalfDay && row.isWorkingDay && !row.leaveType && <HalfDayTag />}
                 {!row.isWorkingDay && row.workedMinutes != null && <DayOffWorkTag />}
+                {row.isLate && <LateTag />}
               </p>
               <p className="truncate text-xs tabular-nums text-muted-foreground">
                 {row.leaveType ? (
@@ -73,6 +74,8 @@ export function RecentAttendanceList({
                     {row.workedMinutes != null && ` · ${minutesToDuration(row.workedMinutes)}`}
                   </>
                 )}
+                {row.extraMinutes != null &&
+                  ` · +${minutesToDuration(row.extraMinutes)} extra${row.extraInProgress ? " (running)" : ""}`}
               </p>
             </div>
           </div>

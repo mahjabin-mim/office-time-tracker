@@ -7,7 +7,7 @@ import { Input, FieldError } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { Briefcase, HeartPulse, Palmtree, PartyPopper, Trash2 } from "lucide-react";
+import { Briefcase, Palmtree, PartyPopper, Timer, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
 import type { DayRow } from "@/lib/calendar";
@@ -18,7 +18,6 @@ type DayType = "work" | LeaveType;
 const DAY_TYPES: { value: DayType; label: string; icon: typeof Briefcase }[] = [
   { value: "work", label: "Worked", icon: Briefcase },
   { value: "leave", label: "Leave", icon: Palmtree },
-  { value: "sick", label: "Sick", icon: HeartPulse },
   { value: "holiday", label: "Holiday", icon: PartyPopper },
 ];
 
@@ -38,9 +37,10 @@ export function AttendanceForm({
   const [state, formAction] = useActionState(saveAttendanceAction, null);
   const [deleting, setDeleting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
-  // Future days can only be planned as leave; there are no times to record yet.
+  // Future days can only be planned as leave; there are no times to record yet. Legacy "sick"
+  // days open as plain leave.
   const [dayType, setDayType] = useState<DayType>(
-    row.leaveType ?? (row.isFuture ? "leave" : "work")
+    row.leaveType ? (row.leaveType === "sick" ? "leave" : row.leaveType) : row.isFuture ? "leave" : "work"
   );
   const savedOnceRef = useRef(false);
   const dayTypes = row.isFuture ? DAY_TYPES.filter((t) => t.value !== "work") : DAY_TYPES;
@@ -73,7 +73,7 @@ export function AttendanceForm({
         aria-label="Day type"
         className={cn(
           "grid gap-1.5 rounded-2xl bg-muted p-1",
-          dayTypes.length === 4 ? "grid-cols-4" : "grid-cols-3"
+          dayTypes.length === 3 ? "grid-cols-3" : "grid-cols-2"
         )}
       >
         {dayTypes.map(({ value, label, icon: Icon }) => (
@@ -144,6 +144,41 @@ export function AttendanceForm({
         >
           This day won&apos;t count as missing or as less time. Nothing is expected from you.
         </p>
+      )}
+
+      {!row.isFuture && (
+        <div className="space-y-3 rounded-2xl border border-border p-3.5">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-medium">
+              <Timer className="h-4 w-4 text-brand-600 dark:text-brand-400" />
+              Extra hours
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Optional. All of it counts as extra time. If it&apos;s still running at 11:59 PM it
+              continues on the next day automatically.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <TimeField
+              name="extraEntryTime"
+              label="Entry time"
+              defaultValue={
+                row.extraEntryMinutes != null ? minutesToClock(row.extraEntryMinutes, "24h") : ""
+              }
+              showNow={row.isToday}
+              error={state?.fieldErrors?.extraEntryTime}
+            />
+            <TimeField
+              name="extraOutTime"
+              label="Out time"
+              defaultValue={
+                row.extraOutMinutes != null ? minutesToClock(row.extraOutMinutes, "24h") : ""
+              }
+              showNow={row.isToday}
+              error={state?.fieldErrors?.extraOutTime}
+            />
+          </div>
+        </div>
       )}
 
       <AnimatePresence mode="wait" initial={false}>

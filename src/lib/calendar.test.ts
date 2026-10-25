@@ -144,3 +144,82 @@ describe("leaveAtMinutes", () => {
     expect(leaveAtMinutes({ entryMinutes: null, expectedMinutes: 9 * H })).toBeNull();
   });
 });
+
+describe("extra hours", () => {
+  it("counts a finished session in full, on top of the regular day", () => {
+    const rows = rowsFor([
+      record("2026-10-01", { extraEntryMinutes: 19 * H, extraOutMinutes: 21 * H + 30 }),
+    ]);
+    const row = rows.find((r) => r.dateKey === "2026-10-01")!;
+    expect(row.extraMinutes).toBe(2.5 * H);
+    expect(row.extraInProgress).toBe(false);
+    expect(row.workedMinutes).toBe(9 * H); // regular time is untouched
+
+    const summary = summarizeRows(rows);
+    expect(summary.totalExtraHourMinutes).toBe(2.5 * H);
+    expect(summary.totalExtraMinutes).toBe(2.5 * H);
+    expect(summary.balanceMinutes).toBe(2.5 * H);
+    expect(summary.totalWorkedMinutes).toBe(9 * H);
+  });
+
+  it("counts extra hours on leave days and days off", () => {
+    const rows = rowsFor([
+      record("2026-10-01", { entryMinutes: null, outMinutes: null, leaveType: "holiday", extraEntryMinutes: 10 * H, extraOutMinutes: 12 * H }),
+      record("2026-10-02", { entryMinutes: null, outMinutes: null, extraEntryMinutes: 10 * H, extraOutMinutes: 11 * H }), // Friday
+    ]);
+    expect(summarizeRows(rows).totalExtraHourMinutes).toBe(3 * H);
+  });
+
+  it("shows today's open session as running but leaves it out of the balance", () => {
+    // now is 14:00 on Friday 2026-10-23
+    const rows = rowsFor([record("2026-10-23", { extraEntryMinutes: 12 * H })]);
+    const row = rows.find((r) => r.dateKey === "2026-10-23")!;
+    expect(row.extraInProgress).toBe(true);
+    expect(row.extraMinutes).toBe(2 * H);
+    expect(summarizeRows(rows).totalExtraHourMinutes).toBe(0);
+  });
+
+  it("flags a month that only has extra hours as having data", () => {
+    const rows = buildDayRows({
+      rangeStart: dateKeyToDate("2026-01-01"),
+      rangeEnd: dateKeyToDate("2026-12-31"),
+      records: [record("2026-02-06", { entryMinutes: null, outMinutes: null, extraEntryMinutes: 600, extraOutMinutes: 660 })], // a Friday
+      schedule,
+      now,
+    });
+    expect(summarizeByMonth(rows)[1].hasData).toBe(true);
+  });
+});
+
+describe("late entries", () => {
+  const lateSchedule = { ...schedule, lateAfterMinutes: 9 * H + 15 };
+
+  function lateRows(records: AttendanceLike[]) {
+    return buildDayRows({
+      rangeStart: dateKeyToDate("2026-10-01"),
+      rangeEnd: dateKeyToDate("2026-10-31"),
+      records,
+      schedule: lateSchedule,
+      now,
+    });
+  }
+
+  it("marks working-day entries after the late time and counts them", () => {
+    const rows = lateRows([
+      record("2026-10-01", { entryMinutes: 9 * H + 15 }), // exactly on time
+      record("2026-10-04", { entryMinutes: 9 * H + 16 }), // late
+      record("2026-10-05", { entryMinutes: 10 * H }), // late
+      record("2026-10-06", { entryMinutes: 8 * H }),
+      record("2026-10-09", { entryMinutes: 11 * H }), // Friday is a day off
+      record("2026-10-07", { entryMinutes: null, outMinutes: null, leaveType: "leave" }),
+    ]);
+    expect(rows.filter((r) => r.isLate).map((r) => r.dateKey)).toEqual(["2026-10-04", "2026-10-05"]);
+    expect(summarizeRows(rows).lateEntriesCount).toBe(2);
+  });
+
+  it("counts nothing when no late time is set", () => {
+    const rows = rowsFor([record("2026-10-04", { entryMinutes: 12 * H })]);
+    expect(rows.some((r) => r.isLate)).toBe(false);
+    expect(summarizeRows(rows).lateEntriesCount).toBe(0);
+  });
+});

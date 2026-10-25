@@ -1,6 +1,8 @@
 import {
   addDays,
   computeDayStatus,
+  computeExtra,
+  isLateEntry,
   isLeaveType,
   isWorkingDay,
   parseWorkingDays,
@@ -14,6 +16,7 @@ export interface ScheduleLike {
   expectedDailyMinutes: number;
   halfDayMinutes: number;
   workingDays: string;
+  lateAfterMinutes?: number | null;
 }
 
 export interface AttendanceLike {
@@ -22,6 +25,8 @@ export interface AttendanceLike {
   outMinutes: number | null;
   isHalfDay: boolean;
   leaveType: string | null;
+  extraEntryMinutes?: number | null;
+  extraOutMinutes?: number | null;
 }
 
 export interface DayRow {
@@ -31,6 +36,13 @@ export interface DayRow {
   outMinutes: number | null;
   isHalfDay: boolean;
   leaveType: LeaveType | null;
+  extraEntryMinutes: number | null;
+  extraOutMinutes: number | null;
+  /** Extra-hours time: completed, or running so far while a session is open today. */
+  extraMinutes: number | null;
+  extraInProgress: boolean;
+  /** Entered after the late-entry time from settings (working days only, never on leave). */
+  isLate: boolean;
   isToday: boolean;
   isFuture: boolean;
   isWorkingDay: boolean;
@@ -72,6 +84,13 @@ export function buildDayRows(params: {
       leaveType,
       trackingStartKey: params.trackingStartKey,
     });
+    const extra = computeExtra({
+      dateKey,
+      todayKey: now.dateKey,
+      nowMinutes: now.minutes,
+      extraEntryMinutes: record?.extraEntryMinutes,
+      extraOutMinutes: record?.extraOutMinutes,
+    });
     rows.push({
       date,
       dateKey,
@@ -79,6 +98,11 @@ export function buildDayRows(params: {
       outMinutes: record?.outMinutes ?? null,
       isHalfDay: record?.isHalfDay ?? false,
       leaveType,
+      extraEntryMinutes: record?.extraEntryMinutes ?? null,
+      extraOutMinutes: record?.extraOutMinutes ?? null,
+      extraMinutes: extra.minutes,
+      extraInProgress: extra.inProgress,
+      isLate: working && !leaveType && isLateEntry(record?.entryMinutes, schedule.lateAfterMinutes),
       isToday: dateKey === now.dateKey,
       isFuture: dateKey > now.dateKey,
       isWorkingDay: working,
@@ -97,6 +121,8 @@ export interface PeriodSummary {
   totalExpectedMinutes: number;
   totalExtraMinutes: number;
   totalLessMinutes: number;
+  /** Completed extra-hours sessions; already included in totalExtraMinutes and the balance. */
+  totalExtraHourMinutes: number;
   workingDaysCount: number;
   daysCompletedCount: number;
   daysMissingCount: number;
@@ -104,6 +130,7 @@ export interface PeriodSummary {
   daysOffWorkedCount: number;
   halfDaysCount: number;
   leaveDaysCount: number;
+  lateEntriesCount: number;
   averageMinutesPerDay: number;
 }
 
@@ -112,14 +139,21 @@ export function summarizeRows(rows: DayRow[]): PeriodSummary {
   let totalExpected = 0;
   let totalExtra = 0;
   let totalLess = 0;
+  let totalExtraHours = 0;
   let workingDays = 0;
   let daysCompleted = 0;
   let daysMissing = 0;
   let daysOffWorked = 0;
   let halfDays = 0;
   let leaveDays = 0;
+  let lateEntries = 0;
 
   for (const row of rows) {
+    if (row.isLate) lateEntries += 1;
+
+    // Extra-hours sessions count on any day (leave, holiday and days off included), once finished.
+    if (row.extraMinutes != null && !row.extraInProgress) totalExtraHours += row.extraMinutes;
+
     // Planned leave counts too, but only when it replaces a working day.
     if (row.status === "leave") {
       if (row.isWorkingDay) leaveDays += 1;
@@ -150,18 +184,22 @@ export function summarizeRows(rows: DayRow[]): PeriodSummary {
     if (diff < 0) totalLess += Math.abs(diff);
   }
 
+  totalExtra += totalExtraHours;
+
   return {
     balanceMinutes: totalExtra - totalLess,
     totalWorkedMinutes: totalWorked,
     totalExpectedMinutes: totalExpected,
     totalExtraMinutes: totalExtra,
     totalLessMinutes: totalLess,
+    totalExtraHourMinutes: totalExtraHours,
     workingDaysCount: workingDays,
     daysCompletedCount: daysCompleted,
     daysMissingCount: daysMissing,
     daysOffWorkedCount: daysOffWorked,
     halfDaysCount: halfDays,
     leaveDaysCount: leaveDays,
+    lateEntriesCount: lateEntries,
     averageMinutesPerDay:
       daysCompleted + daysOffWorked > 0 ? totalWorked / (daysCompleted + daysOffWorked) : 0,
   };
@@ -180,7 +218,9 @@ export function summarizeByMonth(rows: DayRow[]): MonthBreakdown[] {
     const monthRows = rows.filter((r) => r.date.getUTCMonth() === month);
     const summary = summarizeRows(monthRows);
     const hasData = monthRows.some(
-      (r) => r.status !== "future" && r.status !== "not-tracked" && r.status !== "non-working"
+      (r) =>
+        (r.status !== "future" && r.status !== "not-tracked" && r.status !== "non-working") ||
+        r.extraMinutes != null
     );
     return { month, summary, hasData };
   });
