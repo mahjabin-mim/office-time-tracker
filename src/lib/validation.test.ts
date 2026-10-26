@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   attendanceSchema,
+  extraHoursSchema,
   deleteAccountSchema,
   pushSubscriptionSchema,
   scheduleSchema,
@@ -29,25 +30,6 @@ describe("attendanceSchema", () => {
     expect(attendanceSchema.safeParse({ ...base, dayType: "sick" }).success).toBe(false);
   });
 
-  it("validates extra hours times", () => {
-    const work = { ...base, dayType: "work", entryTime: "09:00" };
-    expect(attendanceSchema.safeParse({ ...work, extraEntryTime: "19:00" }).success).toBe(true);
-    expect(
-      attendanceSchema.safeParse({ ...work, extraEntryTime: "19:00", extraOutTime: "21:30" }).success
-    ).toBe(true);
-    // an out time needs an entry, and can't be before it (past-midnight sessions roll over)
-    expect(attendanceSchema.safeParse({ ...work, extraOutTime: "21:30" }).success).toBe(false);
-    expect(
-      attendanceSchema.safeParse({ ...work, extraEntryTime: "22:00", extraOutTime: "02:00" }).success
-    ).toBe(false);
-  });
-
-  it("lets a worked day hold only extra hours", () => {
-    expect(
-      attendanceSchema.safeParse({ ...base, dayType: "work", extraEntryTime: "19:00" }).success
-    ).toBe(true);
-  });
-
   it("rejects unknown day types and malformed values", () => {
     expect(attendanceSchema.safeParse({ ...base, dayType: "vacation" }).success).toBe(false);
     expect(
@@ -56,6 +38,27 @@ describe("attendanceSchema", () => {
     expect(attendanceSchema.safeParse({ ...base, dayType: "leave", date: "22/10/2026" }).success).toBe(
       false
     );
+  });
+});
+
+describe("extraHoursSchema", () => {
+  const base = { date: "2026-10-22" };
+
+  it("needs an entry time, with an optional later out time", () => {
+    expect(extraHoursSchema.safeParse({ ...base, extraEntryTime: "" }).success).toBe(false);
+    expect(extraHoursSchema.safeParse({ ...base, extraEntryTime: "19:00" }).success).toBe(true);
+    expect(
+      extraHoursSchema.safeParse({ ...base, extraEntryTime: "19:00", extraOutTime: "21:30" }).success
+    ).toBe(true);
+  });
+
+  it("rejects an out time that isn't after the entry (past-midnight sessions roll over)", () => {
+    expect(
+      extraHoursSchema.safeParse({ ...base, extraEntryTime: "22:00", extraOutTime: "02:00" }).success
+    ).toBe(false);
+    expect(
+      extraHoursSchema.safeParse({ ...base, extraEntryTime: "22:00", extraOutTime: "22:00" }).success
+    ).toBe(false);
   });
 });
 

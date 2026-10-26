@@ -1,6 +1,6 @@
-import { Pencil, Timer } from "lucide-react";
+import { Pencil, Plus, Timer } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { AttendanceDialogButton } from "@/components/dashboard/AttendanceDialogButton";
+import { ExtraHoursDialogButton } from "@/components/dashboard/ExtraHoursDialogButton";
 import { ClockButton } from "@/components/dashboard/ClockButton";
 import type { DayRow } from "@/lib/calendar";
 import { minutesToClock, minutesToDuration, type TimeFormat } from "@/lib/time";
@@ -9,11 +9,9 @@ import { minutesToClock, minutesToDuration, type TimeFormat } from "@/lib/time";
 export function ExtraHoursCard({
   row,
   timeFormat,
-  halfDayMinutes,
 }: {
   row: DayRow;
   timeFormat: TimeFormat;
-  halfDayMinutes: number;
 }) {
   const started = row.extraEntryMinutes != null;
   const finished = started && row.extraOutMinutes != null;
@@ -40,12 +38,19 @@ export function ExtraHoursCard({
       </div>
       <div className="flex items-start gap-2">
         {started && (
-          <AttendanceDialogButton
+          <ExtraHoursDialogButton
             row={row}
-            halfDayMinutes={halfDayMinutes}
             label="Edit"
             variant="ghost"
             icon={<Pencil className="h-4 w-4" />}
+          />
+        )}
+        {!started && (
+          <ExtraHoursDialogButton
+            row={row}
+            label="Add manually"
+            variant="ghost"
+            icon={<Plus className="h-4 w-4" />}
           />
         )}
         {!started && <ClockButton mode="in" extra variant="secondary" />}

@@ -26,24 +26,21 @@ export const attendanceSchema = z
     entryTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     outTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     isHalfDay: z.boolean(),
-    // Extra hours are a separate session that can sit on any day type.
+  })
+  .refine((data) => data.dayType !== "work" || !!data.entryTime || !!data.outTime, {
+    message: "Enter at least an entry time or an out time",
+    path: ["entryTime"],
+  });
+
+/** The extra-hours session is saved on its own, apart from the regular day. */
+export const extraHoursSchema = z
+  .object({
+    date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     extraEntryTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
     extraOutTime: z.string().regex(/^\d{2}:\d{2}$/).optional().or(z.literal("")),
   })
-  .refine(
-    (data) =>
-      data.dayType !== "work" ||
-      !!data.entryTime ||
-      !!data.outTime ||
-      !!data.extraEntryTime ||
-      !!data.extraOutTime,
-    {
-      message: "Enter at least an entry time or an out time",
-      path: ["entryTime"],
-    }
-  )
-  .refine((data) => !data.extraOutTime || !!data.extraEntryTime, {
-    message: "Add the extra hours entry time",
+  .refine((data) => !!data.extraEntryTime, {
+    message: "Enter the entry time",
     path: ["extraEntryTime"],
   })
   .refine(

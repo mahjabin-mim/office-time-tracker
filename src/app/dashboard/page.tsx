@@ -56,11 +56,7 @@ export default async function DashboardPage() {
           />
         </Reveal>
         <Reveal delay={0.08} className="mt-3">
-          <ExtraHoursCard
-            row={todayRow}
-            timeFormat={timeFormat}
-            halfDayMinutes={schedule.halfDayMinutes}
-          />
+          <ExtraHoursCard row={todayRow} timeFormat={timeFormat} />
         </Reveal>
       </section>
 

@@ -5,7 +5,6 @@ import { LogIn, LogOut } from "lucide-react";
 import { clockAction, clockExtraAction } from "@/lib/actions/attendance";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import type { ButtonProps } from "@/components/ui/Button";
-import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
 
 export function ClockButton({
@@ -41,8 +40,6 @@ export function ClockButton({
         variant={variant}
         size={size}
         pendingLabel={mode === "in" ? (extra ? "Starting…" : "Clocking in…") : extra ? "Ending…" : "Clocking out…"}
-        // A gentle pulse invites the main "Clock in" tap.
-        className={cn(mode === "in" && !extra && variant === "primary" && "animate-ring-pulse")}
       >
         <Icon className="h-4 w-4" />
         {label ?? (extra ? (mode === "in" ? "Start extra hours" : "End extra hours") : mode === "in" ? "Clock in" : "Clock out")}

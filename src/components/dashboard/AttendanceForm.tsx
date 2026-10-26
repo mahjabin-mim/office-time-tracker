@@ -3,11 +3,11 @@
 import { useActionState, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { saveAttendanceAction, deleteAttendanceAction } from "@/lib/actions/attendance";
-import { Input, FieldError } from "@/components/ui/Input";
+import { TimeField } from "@/components/dashboard/TimeField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
-import { Briefcase, Palmtree, PartyPopper, Timer, Trash2 } from "lucide-react";
+import { Briefcase, Palmtree, PartyPopper, Trash2 } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { toast } from "@/lib/toast";
 import type { DayRow } from "@/lib/calendar";
@@ -146,41 +146,6 @@ export function AttendanceForm({
         </p>
       )}
 
-      {!row.isFuture && (
-        <div className="space-y-3 rounded-2xl border border-border p-3.5">
-          <div>
-            <p className="flex items-center gap-2 text-sm font-medium">
-              <Timer className="h-4 w-4 text-brand-600 dark:text-brand-400" />
-              Extra hours
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              Optional. All of it counts as extra time. If it&apos;s still running at 11:59 PM it
-              continues on the next day automatically.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <TimeField
-              name="extraEntryTime"
-              label="Entry time"
-              defaultValue={
-                row.extraEntryMinutes != null ? minutesToClock(row.extraEntryMinutes, "24h") : ""
-              }
-              showNow={row.isToday}
-              error={state?.fieldErrors?.extraEntryTime}
-            />
-            <TimeField
-              name="extraOutTime"
-              label="Out time"
-              defaultValue={
-                row.extraOutMinutes != null ? minutesToClock(row.extraOutMinutes, "24h") : ""
-              }
-              showNow={row.isToday}
-              error={state?.fieldErrors?.extraOutTime}
-            />
-          </div>
-        </div>
-      )}
-
       <AnimatePresence mode="wait" initial={false}>
         {confirmingDelete ? (
           <motion.div
@@ -240,49 +205,5 @@ export function AttendanceForm({
         )}
       </AnimatePresence>
     </form>
-  );
-}
-
-function TimeField({
-  name,
-  label,
-  defaultValue,
-  showNow,
-  error,
-}: {
-  name: string;
-  label: string;
-  defaultValue?: string;
-  showNow: boolean;
-  error?: string;
-}) {
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  function fillNow() {
-    const now = new Date();
-    if (inputRef.current) {
-      inputRef.current.value = minutesToClock(now.getHours() * 60 + now.getMinutes(), "24h");
-    }
-  }
-
-  return (
-    <div>
-      <div className="mb-1.5 flex items-center justify-between gap-2">
-        <label htmlFor={name} className="text-sm font-medium text-foreground">
-          {label}
-        </label>
-        {showNow && (
-          <button
-            type="button"
-            onClick={fillNow}
-            className="rounded-md px-1.5 text-xs font-semibold text-brand-600 transition-colors hover:bg-brand-600/10 dark:text-brand-400"
-          >
-            Now
-          </button>
-        )}
-      </div>
-      <Input ref={inputRef} id={name} name={name} type="time" defaultValue={defaultValue ?? ""} />
-      <FieldError>{error}</FieldError>
-    </div>
   );
 }

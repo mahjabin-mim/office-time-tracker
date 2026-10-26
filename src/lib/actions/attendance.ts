@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUserId } from "@/lib/auth";
 import { clockToMinutes, dateKeyToDate, getZonedNow } from "@/lib/time";
-import { attendanceSchema } from "@/lib/validation";
+import { attendanceSchema, extraHoursSchema } from "@/lib/validation";
 import { settleExtraSessions } from "@/lib/extra";
 
 export type AttendanceFormState = {
@@ -36,8 +36,6 @@ export async function saveAttendanceAction(
     entryTime: String(formData.get("entryTime") ?? ""),
     outTime: String(formData.get("outTime") ?? ""),
     isHalfDay: formData.get("isHalfDay") === "on",
-    extraEntryTime: String(formData.get("extraEntryTime") ?? ""),
-    extraOutTime: String(formData.get("extraOutTime") ?? ""),
   };
 
   const parsed = attendanceSchema.safeParse(raw);
@@ -51,18 +49,8 @@ export async function saveAttendanceAction(
   }
 
   const leaveType = parsed.data.dayType === "work" ? null : parsed.data.dayType;
-  const nowForUser = await getNowForUser(userId);
-  const hasExtra = !!parsed.data.extraEntryTime;
-  if ((!leaveType || hasExtra) && parsed.data.date > nowForUser.dateKey) {
-    return {
-      error: hasExtra
-        ? "Extra hours can't be added to a future day."
-        : "Future days can only be marked as leave or a holiday.",
-    };
-  }
-  // An open session on a past day would be carried forward automatically, so it needs an end.
-  if (hasExtra && !parsed.data.extraOutTime && parsed.data.date !== nowForUser.dateKey) {
-    return { fieldErrors: { extraOutTime: "Add an out time for a past day" } };
+  if (!leaveType && parsed.data.date > (await getNowForUser(userId)).dateKey) {
+    return { error: "Future days can only be marked as leave or a holiday." };
   }
 
   // Leave days don't keep times, so switching a day to leave clears them.
@@ -71,28 +59,12 @@ export async function saveAttendanceAction(
   const outMinutes = !leaveType && parsed.data.outTime ? clockToMinutes(parsed.data.outTime) : null;
   const isHalfDay = !leaveType && parsed.data.isHalfDay;
   const date = dateKeyToDate(parsed.data.date);
-  // Extra hours are their own session and survive a day being switched to leave or a holiday.
-  const extraEntryMinutes = parsed.data.extraEntryTime
-    ? clockToMinutes(parsed.data.extraEntryTime)
-    : null;
-  const extraOutMinutes =
-    extraEntryMinutes != null && parsed.data.extraOutTime
-      ? clockToMinutes(parsed.data.extraOutTime)
-      : null;
 
+  // Extra hours are saved separately, so they're left untouched here.
   await db.attendance.upsert({
     where: { userId_date: { userId, date } },
-    create: {
-      userId,
-      date,
-      entryMinutes,
-      outMinutes,
-      isHalfDay,
-      leaveType,
-      extraEntryMinutes,
-      extraOutMinutes,
-    },
-    update: { entryMinutes, outMinutes, isHalfDay, leaveType, extraEntryMinutes, extraOutMinutes },
+    create: { userId, date, entryMinutes, outMinutes, isHalfDay, leaveType },
+    update: { entryMinutes, outMinutes, isHalfDay, leaveType },
   });
 
   revalidateAttendanceViews();
@@ -124,6 +96,63 @@ export async function clockAction(_prevState: AttendanceFormState): Promise<Atte
 
   revalidateAttendanceViews();
   return { success: true };
+}
+
+/** Saves a day's extra-hours session from its own dialog. */
+export async function saveExtraHoursAction(
+  _prevState: AttendanceFormState,
+  formData: FormData
+): Promise<AttendanceFormState> {
+  const userId = await requireUserId();
+
+  const parsed = extraHoursSchema.safeParse({
+    date: String(formData.get("date") ?? ""),
+    extraEntryTime: String(formData.get("extraEntryTime") ?? ""),
+    extraOutTime: String(formData.get("extraOutTime") ?? ""),
+  });
+  if (!parsed.success) {
+    const fieldErrors: Record<string, string> = {};
+    for (const issue of parsed.error.issues) {
+      const key = issue.path[0];
+      if (typeof key === "string" && !fieldErrors[key]) fieldErrors[key] = issue.message;
+    }
+    return { fieldErrors };
+  }
+
+  const today = (await getNowForUser(userId)).dateKey;
+  if (parsed.data.date > today) return { error: "Extra hours can't be added to a future day." };
+  // An open session on a past day would be carried forward automatically, so it needs an end.
+  if (!parsed.data.extraOutTime && parsed.data.date !== today) {
+    return { fieldErrors: { extraOutTime: "Add an out time for a past day" } };
+  }
+
+  const extraEntryMinutes = clockToMinutes(parsed.data.extraEntryTime!);
+  const extraOutMinutes = parsed.data.extraOutTime ? clockToMinutes(parsed.data.extraOutTime) : null;
+  const date = dateKeyToDate(parsed.data.date);
+
+  await db.attendance.upsert({
+    where: { userId_date: { userId, date } },
+    create: { userId, date, extraEntryMinutes, extraOutMinutes },
+    update: { extraEntryMinutes, extraOutMinutes },
+  });
+
+  revalidateAttendanceViews();
+  return { success: true };
+}
+
+/** Removes a day's extra-hours session and leaves the rest of the day alone. */
+export async function clearExtraHoursAction(dateKey: string): Promise<void> {
+  const userId = await requireUserId();
+  const date = dateKeyToDate(dateKey);
+
+  await db.attendance
+    .update({
+      where: { userId_date: { userId, date } },
+      data: { extraEntryMinutes: null, extraOutMinutes: null },
+    })
+    .catch(() => null);
+
+  revalidateAttendanceViews();
 }
 
 /** One-tap clock for extra hours: starts today's extra session, or ends it once it is running. */
@@ -158,10 +187,18 @@ export async function clockExtraAction(
 export async function deleteAttendanceAction(dateKey: string): Promise<void> {
   const userId = await requireUserId();
   const date = dateKeyToDate(dateKey);
+  const where = { userId_date: { userId, date } };
 
-  await db.attendance
-    .delete({ where: { userId_date: { userId, date } } })
-    .catch(() => null);
+  // Extra hours are managed in their own dialog, so clearing the day keeps them.
+  const existing = await db.attendance.findUnique({ where });
+  if (existing?.extraEntryMinutes != null) {
+    await db.attendance.update({
+      where,
+      data: { entryMinutes: null, outMinutes: null, isHalfDay: false, leaveType: null },
+    });
+  } else {
+    await db.attendance.delete({ where }).catch(() => null);
+  }
 
   revalidateAttendanceViews();
 }

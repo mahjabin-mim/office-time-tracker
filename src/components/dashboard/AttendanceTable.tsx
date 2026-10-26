@@ -1,7 +1,8 @@
-import { CalendarPlus, Pencil, Plus } from "lucide-react";
+import { CalendarPlus, Pencil, Plus, Timer } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { DayOffWorkTag, HalfDayTag, LateTag, StatusBadge } from "@/components/ui/StatusBadge";
 import { AttendanceDialogButton } from "@/components/dashboard/AttendanceDialogButton";
+import { ExtraHoursDialogButton } from "@/components/dashboard/ExtraHoursDialogButton";
 import { cn } from "@/lib/cn";
 import type { DayRow } from "@/lib/calendar";
 import {
@@ -32,9 +33,7 @@ function hasTimes(row: DayRow) {
   return row.entryMinutes != null || row.outMinutes != null;
 }
 
-function hasRecordedDay(row: DayRow) {
-  return hasTimes(row) || row.extraEntryMinutes != null || row.leaveType != null;
-}
+
 
 function Tags({ row }: { row: DayRow }) {
   return (
@@ -56,7 +55,7 @@ function EditButton({
   halfDayMinutes: number;
   compact?: boolean;
 }) {
-  const hasRecord = hasRecordedDay(row);
+  const hasRecord = hasTimes(row) || row.leaveType != null;
   const label = hasRecord ? "Edit" : row.isFuture ? "Plan" : "Add";
   const Icon = hasRecord ? Pencil : row.isFuture ? CalendarPlus : Plus;
   return (
@@ -68,6 +67,21 @@ function EditButton({
       size="sm"
       icon={<Icon className="h-3.5 w-3.5" />}
       className={cn(!hasRecord && "opacity-70 hover:opacity-100")}
+    />
+  );
+}
+
+function ExtraButton({ row, compact }: { row: DayRow; compact?: boolean }) {
+  if (row.isFuture) return null;
+  const hasExtra = row.extraEntryMinutes != null;
+  return (
+    <ExtraHoursDialogButton
+      row={row}
+      label={hasExtra ? "Extra" : "+ Extra"}
+      variant={compact ? "secondary" : "ghost"}
+      size="sm"
+      icon={<Timer className="h-3.5 w-3.5" />}
+      className={cn(!hasExtra && "opacity-70 hover:opacity-100")}
     />
   );
 }
@@ -141,6 +155,7 @@ export function AttendanceTable({
                 </span>
               )}
               <EditButton row={row} halfDayMinutes={halfDayMinutes} compact />
+              <ExtraButton row={row} compact />
             </div>
           </li>
         ))}
@@ -216,7 +231,10 @@ export function AttendanceTable({
                   </div>
                 </td>
                 <td className="whitespace-nowrap px-5 py-3 text-right">
-                  <EditButton row={row} halfDayMinutes={halfDayMinutes} />
+                  <div className="flex items-center justify-end gap-1">
+                    <ExtraButton row={row} />
+                    <EditButton row={row} halfDayMinutes={halfDayMinutes} />
+                  </div>
                 </td>
               </tr>
             ))}
