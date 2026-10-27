@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { buildDayRows, type AttendanceLike } from "@/lib/calendar";
-import { CLOCK_IN_GRACE_MINUTES, CLOCK_OUT_GRACE_MINUTES, dueReminders } from "@/lib/reminders";
+import {
+  CLOCK_IN_GRACE_MINUTES,
+  CLOCK_OUT_GRACE_MINUTES,
+  EXTRA_RUNNING_REMINDER_MINUTES,
+  dueReminders,
+} from "@/lib/reminders";
 import { dateKeyToDate, getZonedNow } from "@/lib/time";
 
 const H = 60;
@@ -91,6 +96,39 @@ describe("dueReminders", () => {
     });
     expect(
       dueReminders({ today, now: friday, prefs: allOn, workStartMinutes: 9 * H, workEndMinutes: 19 * H })
+    ).toEqual([]);
+  });
+});
+
+describe("extra hours reminder", () => {
+  const started = 19 * H; // extra session started at 19:00
+
+  it("fires once the session has run long enough, and only while it's running", () => {
+    const open = { extraEntryMinutes: started };
+    expect(kindsAt(started + EXTRA_RUNNING_REMINDER_MINUTES - 1, open)).toEqual([]);
+    expect(kindsAt(started + EXTRA_RUNNING_REMINDER_MINUTES, open)).toEqual(["extra-running"]);
+    expect(
+      kindsAt(started + EXTRA_RUNNING_REMINDER_MINUTES, { ...open, extraOutMinutes: 21 * H })
+    ).toEqual([]);
+  });
+
+  it("applies on days off and leave, unlike the regular reminders", () => {
+    // a holiday has no regular reminders, but a running extra session still gets one
+    expect(
+      kindsAt(started + EXTRA_RUNNING_REMINDER_MINUTES, {
+        extraEntryMinutes: started,
+        leaveType: "holiday",
+      })
+    ).toEqual(["extra-running"]);
+  });
+
+  it("follows the clock-out reminder preference", () => {
+    expect(
+      kindsAt(
+        started + EXTRA_RUNNING_REMINDER_MINUTES,
+        { extraEntryMinutes: started },
+        { ...allOn, remindClockOut: false }
+      )
     ).toEqual([]);
   });
 });

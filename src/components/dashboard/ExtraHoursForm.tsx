@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { saveExtraHoursAction, clearExtraHoursAction } from "@/lib/actions/attendance";
 import { TimeField } from "@/components/dashboard/TimeField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
@@ -21,7 +22,8 @@ export function ExtraHoursForm({
   onSaved?: () => void;
 }) {
   const [state, formAction] = useActionState(saveExtraHoursAction, null);
-  const [clearing, setClearing] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const savedOnceRef = useRef(false);
   const hasExtra = row.extraEntryMinutes != null;
 
@@ -33,11 +35,11 @@ export function ExtraHoursForm({
     }
   }, [state, onSaved]);
 
-  async function handleClear() {
-    setClearing(true);
+  async function handleConfirmDelete() {
+    setDeleting(true);
     await clearExtraHoursAction(row.dateKey);
-    setClearing(false);
-    toast("Extra hours cleared", "info");
+    setDeleting(false);
+    toast("Extra hours deleted", "info");
     onSaved?.();
   }
 
@@ -74,23 +76,64 @@ export function ExtraHoursForm({
         the next day automatically.
       </p>
 
-      <div className="flex items-center justify-between gap-3">
-        {hasExtra ? (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleClear}
-            disabled={clearing}
-            className="text-less hover:bg-less/10"
+      <AnimatePresence mode="wait" initial={false}>
+        {confirmingDelete ? (
+          <motion.div
+            key="confirm"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18 }}
+            className="flex items-center justify-between gap-3 rounded-xl border border-less/30 bg-less/10 px-3.5 py-2.5"
           >
-            <Trash2 className="h-4 w-4" />
-            {clearing ? "Clearing…" : "Clear"}
-          </Button>
+            <p className="text-sm text-less">Remove this day&apos;s extra hours?</p>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setConfirmingDelete(false)}
+                disabled={deleting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="danger"
+                size="sm"
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Removing…" : "Yes, delete"}
+              </Button>
+            </div>
+          </motion.div>
         ) : (
-          <span />
+          <motion.div
+            key="actions"
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18 }}
+            className="flex items-center justify-between gap-3"
+          >
+            {hasExtra ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setConfirmingDelete(true)}
+                className="text-less hover:bg-less/10"
+              >
+                <Trash2 className="h-4 w-4" />
+                Delete
+              </Button>
+            ) : (
+              <span />
+            )}
+            <SubmitButton pendingLabel="Saving…">Save</SubmitButton>
+          </motion.div>
         )}
-        <SubmitButton pendingLabel="Saving…">Save</SubmitButton>
-      </div>
+      </AnimatePresence>
     </form>
   );
 }

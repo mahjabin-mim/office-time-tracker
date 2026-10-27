@@ -4,6 +4,7 @@ import { DEFAULT_SCHEDULE } from "@/lib/data";
 import { buildDayRows } from "@/lib/calendar";
 import { claimReminder, isPushConfigured, sendPushToUser } from "@/lib/push";
 import { dueReminders } from "@/lib/reminders";
+import { settleExtraSessions } from "@/lib/extra";
 import { getZonedNow } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -33,6 +34,8 @@ export async function GET(req: NextRequest) {
   for (const user of users) {
     const schedule = user.schedule ?? DEFAULT_SCHEDULE;
     const now = getZonedNow(user.timezone);
+    // Carry any extra-hours session left open past midnight, so it's seen as running today.
+    await settleExtraSessions(user.id, now);
     const record = await db.attendance.findUnique({
       where: { userId_date: { userId: user.id, date: now.date } },
     });

@@ -1,7 +1,7 @@
 import { leaveAtMinutes, type DayRow } from "@/lib/calendar";
 import { minutesToDuration, type ZonedNow } from "@/lib/time";
 
-export const REMINDER_KINDS = ["clock-in", "leave", "clock-out"] as const;
+export const REMINDER_KINDS = ["clock-in", "leave", "clock-out", "extra-running"] as const;
 export type ReminderKind = (typeof REMINDER_KINDS)[number];
 
 export interface Reminder {
@@ -20,6 +20,9 @@ export interface ReminderPrefs {
 export const CLOCK_IN_GRACE_MINUTES = 60;
 /** How long past the leave time an open day triggers a "forgot to clock out?" nudge. */
 export const CLOCK_OUT_GRACE_MINUTES = 120;
+
+/** How long an extra-hours session runs before a "still running?" nudge. */
+export const EXTRA_RUNNING_REMINDER_MINUTES = 180;
 
 export function leaveReminder(row: Pick<DayRow, "expectedMinutes">): Reminder {
   return {
@@ -41,10 +44,27 @@ export function dueReminders(params: {
   workEndMinutes: number;
 }): Reminder[] {
   const { today, now, prefs } = params;
-  // Only regular working days get reminders: not leave, days off, or future-dated rows.
-  if (!today.isToday || !today.isWorkingDay || today.leaveType) return [];
+  if (!today.isToday) return [];
 
   const reminders: Reminder[] = [];
+
+  // Extra hours can run on any day, so this one isn't limited to regular working days. It shares
+  // the "forgot to clock out" preference.
+  if (
+    prefs.remindClockOut &&
+    today.extraInProgress &&
+    today.extraMinutes != null &&
+    today.extraMinutes >= EXTRA_RUNNING_REMINDER_MINUTES
+  ) {
+    reminders.push({
+      kind: "extra-running",
+      title: "Extra hours still running",
+      body: `Your extra hours have been running for ${minutesToDuration(today.extraMinutes)}. End them when you're done, or they'll continue past midnight.`,
+    });
+  }
+
+  // The rest are only for regular working days: not leave, days off, or future-dated rows.
+  if (!today.isWorkingDay || today.leaveType) return reminders;
 
   if (
     prefs.remindClockIn &&

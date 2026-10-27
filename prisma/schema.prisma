@@ -83,7 +83,7 @@ model ReminderLog {
   userId  String
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   dateKey String // YYYY-MM-DD in the user's time zone
-  kind    String // "clock-in" | "leave" | "clock-out"
+  kind    String // "clock-in" | "leave" | "clock-out" | "extra-running"
   sentAt  DateTime @default(now())
 
   @@unique([userId, dateKey, kind])

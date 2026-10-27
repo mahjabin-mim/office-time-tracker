@@ -28,7 +28,8 @@ const PREFS = [
   {
     name: "remindClockOut",
     title: "Forgot to clock out",
-    description: "Two hours after your leave time, if the day is still open.",
+    description:
+      "Two hours after your leave time if the day is still open, or when extra hours have been running for 3 hours.",
   },
 ] as const;
 
