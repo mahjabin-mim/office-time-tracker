@@ -11,7 +11,7 @@ export function GetAppButton({
   variant,
   className,
 }: {
-  variant: "link" | "card" | "menu";
+  variant: "card" | "menu";
   className?: string;
 }) {
   const { ready, inApp, platform } = useAppContext();
@@ -36,7 +36,7 @@ export function GetAppButton({
           <span className="block text-xs text-muted-foreground">Android &amp; iPhone</span>
         </span>
       </button>
-    ) : variant === "menu" ? (
+    ) : (
       <button
         type="button"
         role="menuitem"
@@ -47,18 +47,6 @@ export function GetAppButton({
         )}
       >
         <Smartphone className="h-4 w-4 text-muted-foreground" />
-        Get the mobile app
-      </button>
-    ) : (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={cn(
-          "inline-flex items-center gap-1.5 text-sm font-medium text-brand-600 transition-colors hover:text-brand-700 dark:text-brand-400",
-          className
-        )}
-      >
-        <Smartphone className="h-4 w-4" />
         Get the mobile app
       </button>
     );
