@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUserId } from "@/lib/auth";
 import { createSession, destroySession, getSession } from "@/lib/session";
-import { clockToMinutes, isValidTimeZone } from "@/lib/time";
+import { clockToMinutes, halfDayMinutesFor, isValidTimeZone } from "@/lib/time";
 import {
   deleteAccountSchema,
   passwordChangeSchema,
@@ -34,7 +34,6 @@ export async function updateScheduleAction(
 
   const parsed = scheduleSchema.safeParse({
     expectedDailyMinutes: Number(formData.get("expectedDailyHours")) * 60,
-    halfDayMinutes: Math.round(Number(formData.get("halfDayHours")) * 60),
     workStartMinutes: clockToMinutes(workStartRaw) ?? 540,
     workEndMinutes: clockToMinutes(workEndRaw) ?? 1020,
     workingDays,
@@ -49,11 +48,12 @@ export async function updateScheduleAction(
     return { fieldErrors };
   }
 
-  await db.workSchedule.upsert({
-    where: { userId },
-    create: { userId, ...parsed.data, workingDays: parsed.data.workingDays.join(",") },
-    update: { ...parsed.data, workingDays: parsed.data.workingDays.join(",") },
-  });
+  const schedule = {
+    ...parsed.data,
+    halfDayMinutes: halfDayMinutesFor(parsed.data.expectedDailyMinutes),
+    workingDays: parsed.data.workingDays.join(","),
+  };
+  await db.workSchedule.upsert({ where: { userId }, create: { userId, ...schedule }, update: schedule });
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/monthly");

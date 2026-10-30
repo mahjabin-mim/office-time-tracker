@@ -5,7 +5,7 @@ import { getSession } from "@/lib/session";
 import { buildDayRows, type DayRow } from "@/lib/calendar";
 import { settleExtraSessions } from "@/lib/extra";
 import { needsWorkdaySetup } from "@/lib/setup";
-import { DEFAULT_HALF_DAY_MINUTES, addDays, getZonedNow } from "@/lib/time";
+import { addDays, getZonedNow, halfDayMinutesFor } from "@/lib/time";
 import { redirect } from "next/navigation";
 import type { User, WorkSchedule } from "@prisma/client";
 
@@ -28,7 +28,7 @@ export async function requireCurrentUser() {
 
 export const DEFAULT_SCHEDULE = {
   expectedDailyMinutes: 540,
-  halfDayMinutes: DEFAULT_HALF_DAY_MINUTES,
+  halfDayMinutes: halfDayMinutesFor(540),
   workStartMinutes: 540,
   workEndMinutes: 1140,
   workingDays: "0,1,2,3,4",
@@ -45,7 +45,8 @@ export async function userNeedsSetup(userId: string): Promise<boolean> {
 
 export async function getOrCreateSchedule(userId: string): Promise<WorkSchedule> {
   const existing = await db.workSchedule.findUnique({ where: { userId } });
-  if (existing) return existing;
+  // Half days follow the daily hours, even for schedules saved when they could be set separately.
+  if (existing) return { ...existing, halfDayMinutes: halfDayMinutesFor(existing.expectedDailyMinutes) };
   return db.workSchedule.create({ data: { userId, ...DEFAULT_SCHEDULE } });
 }
 

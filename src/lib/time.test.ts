@@ -9,6 +9,7 @@ import {
   formatDayLabel,
   formatMonthLabel,
   getZonedNow,
+  halfDayMinutesFor,
   isLateEntry,
   isLeaveType,
   isValidTimeZone,
@@ -148,21 +149,25 @@ describe("computeDayStatus", () => {
     });
   });
 
-  it("uses the half-day length on half days", () => {
-    const halfDay = computeDayStatus({
-      ...base,
-      isHalfDay: true,
-      halfDayMinutes: 4.5 * H,
-      outMinutes: 13 * H + 30,
-    });
+  it("expects half the daily hours on half days", () => {
+    const halfDay = computeDayStatus({ ...base, isHalfDay: true, outMinutes: 13 * H + 30 });
     expect(halfDay).toMatchObject({
       status: "on-target",
       expectedMinutes: 270,
       workedMinutes: 270,
     });
     expect(
-      computeDayStatus({ ...base, isHalfDay: true, halfDayMinutes: 4 * H, outMinutes: 13 * H })
+      computeDayStatus({
+        ...base,
+        isHalfDay: true,
+        expectedDailyMinutes: 8 * H,
+        outMinutes: 13 * H,
+      })
     ).toMatchObject({ status: "on-target", expectedMinutes: 240 });
+  });
+
+  it("rounds an odd half day to whole minutes", () => {
+    expect(halfDayMinutesFor(7 * H + 45)).toBe(233);
   });
 
   it("counts every minute worked on a day off as extra", () => {

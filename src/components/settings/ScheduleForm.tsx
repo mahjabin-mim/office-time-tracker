@@ -1,11 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { updateScheduleAction } from "@/lib/actions/settings";
 import { Input, Label, FieldError } from "@/components/ui/Input";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Alert } from "@/components/ui/Alert";
-import { minutesToClock } from "@/lib/time";
+import { halfDayMinutesFor, minutesToClock, minutesToDuration } from "@/lib/time";
 import type { WorkSchedule } from "@prisma/client";
 
 const DAYS = [
@@ -20,7 +20,10 @@ const DAYS = [
 
 export function ScheduleForm({ schedule }: { schedule: WorkSchedule }) {
   const [state, formAction] = useActionState(updateScheduleAction, null);
+  const [dailyHours, setDailyHours] = useState(String(schedule.expectedDailyMinutes / 60));
   const workingDays = new Set(schedule.workingDays.split(",").map(Number));
+  const daily = Number(dailyHours);
+  const halfDayMinutes = dailyHours && daily >= 1 && daily <= 24 ? halfDayMinutesFor(daily * 60) : null;
 
   return (
     <form action={formAction} className="space-y-5">
@@ -36,25 +39,19 @@ export function ScheduleForm({ schedule }: { schedule: WorkSchedule }) {
             step={0.25}
             min={1}
             max={24}
-            defaultValue={schedule.expectedDailyMinutes / 60}
+            value={dailyHours}
+            onChange={(e) => setDailyHours(e.target.value)}
           />
           <FieldError>{state?.fieldErrors?.expectedDailyMinutes}</FieldError>
         </div>
         <div>
-          <Label htmlFor="halfDayHours">Half-day hours</Label>
-          <Input
-            id="halfDayHours"
-            name="halfDayHours"
-            type="number"
-            step={0.25}
-            min={0.5}
-            max={24}
-            defaultValue={schedule.halfDayMinutes / 60}
-          />
+          <Label>Half-day hours</Label>
+          <div className="flex h-11 items-center rounded-xl border border-input bg-muted/40 px-3.5 text-sm text-muted-foreground">
+            {halfDayMinutes != null ? minutesToDuration(halfDayMinutes) : "—"}
+          </div>
           <p className="mt-1.5 text-xs text-muted-foreground">
-            Expected time on days you tick &ldquo;Half day&rdquo;.
+            Half of your daily hours. Expected on days you tick &ldquo;Half day&rdquo;.
           </p>
-          <FieldError>{state?.fieldErrors?.halfDayMinutes}</FieldError>
         </div>
       </div>
 

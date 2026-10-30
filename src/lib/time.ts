@@ -1,7 +1,9 @@
 export type TimeFormat = "12h" | "24h";
 
-/** Default half-day length (4h 30m); each user can change it in their working schedule. */
-export const DEFAULT_HALF_DAY_MINUTES = 270;
+/** A half day is always half of the expected daily hours (4h 30m for a 9-hour day). */
+export function halfDayMinutesFor(expectedDailyMinutes: number): number {
+  return Math.round(expectedDailyMinutes / 2);
+}
 
 export const WEEKDAYS = [
   "Sunday",
@@ -278,7 +280,6 @@ export function computeDayStatus(params: {
   outMinutes: number | null | undefined;
   expectedDailyMinutes: number;
   isHalfDay?: boolean;
-  halfDayMinutes?: number;
   leaveType?: LeaveType | null;
   /** Days before this key (e.g. the signup date) with nothing recorded aren't counted as missing. */
   trackingStartKey?: string;
@@ -309,7 +310,7 @@ export function computeDayStatus(params: {
   const expectedDailyMinutes = !isWorking
     ? 0
     : isHalfDay
-    ? params.halfDayMinutes ?? DEFAULT_HALF_DAY_MINUTES
+    ? halfDayMinutesFor(params.expectedDailyMinutes)
     : params.expectedDailyMinutes;
 
   if (!hasEntry && !hasOut) {

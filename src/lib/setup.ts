@@ -1,3 +1,4 @@
+import { halfDayMinutesFor } from "@/lib/time";
 import type { SetupChoices } from "@/lib/validation";
 
 /** One-tap answers on the "Set up your workday" screen; "Custom" covers everything else. */
@@ -17,7 +18,7 @@ export function scheduleFromSetup(
 ) {
   return {
     expectedDailyMinutes: choices.expectedDailyMinutes,
-    halfDayMinutes: Math.round(choices.expectedDailyMinutes / 2),
+    halfDayMinutes: halfDayMinutesFor(choices.expectedDailyMinutes),
     workStartMinutes: choices.workStartMinutes,
     // Capped at midnight: the end time only decides when the "forgot to clock in" reminder stops.
     workEndMinutes: Math.min(choices.workStartMinutes + choices.expectedDailyMinutes, 1439),

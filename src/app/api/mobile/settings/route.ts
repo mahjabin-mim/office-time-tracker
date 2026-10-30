@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { getOrCreateSchedule } from "@/lib/data";
-import { isValidTimeZone } from "@/lib/time";
+import { halfDayMinutesFor, isValidTimeZone } from "@/lib/time";
 import {
   lateEntrySchema,
   preferencesSchema,
@@ -81,7 +81,11 @@ export const PATCH = withMobileUser(async (req, user) => {
   if (body.schedule !== undefined) {
     const parsed = scheduleSchema.safeParse(body.schedule);
     if (!parsed.success) return json({ fieldErrors: firstIssues(parsed.error) }, 422);
-    Object.assign(scheduleData, parsed.data, { workingDays: parsed.data.workingDays.join(",") });
+    // Any halfDayMinutes the app sends is dropped by the schema; it's always half the daily hours.
+    Object.assign(scheduleData, parsed.data, {
+      halfDayMinutes: halfDayMinutesFor(parsed.data.expectedDailyMinutes),
+      workingDays: parsed.data.workingDays.join(","),
+    });
     // Choosing a schedule in the app counts as setting up, so recording time is allowed.
     if (user.needsSetup) userData.needsSetup = false;
   }

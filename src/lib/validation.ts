@@ -52,12 +52,8 @@ export const extraHoursSchema = z
   );
 
 export const scheduleSchema = z.object({
+  // A half day isn't sent: it's always half of these hours (see halfDayMinutesFor).
   expectedDailyMinutes: z.number().int().min(60).max(1440),
-  halfDayMinutes: z
-    .number({ invalid_type_error: "Enter the half-day hours" })
-    .int()
-    .min(30, "A half day must be at least 30 minutes")
-    .max(1440),
   workStartMinutes: z.number().int().min(0).max(1439),
   workEndMinutes: z.number().int().min(0).max(1439),
   workingDays: z

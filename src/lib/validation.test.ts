@@ -65,7 +65,6 @@ describe("extraHoursSchema", () => {
 describe("scheduleSchema", () => {
   const valid = {
     expectedDailyMinutes: 540,
-    halfDayMinutes: 270,
     workStartMinutes: 540,
     workEndMinutes: 1140,
     workingDays: [0, 1, 2, 3, 4],
@@ -75,10 +74,13 @@ describe("scheduleSchema", () => {
     expect(scheduleSchema.safeParse(valid).success).toBe(true);
   });
 
-  it("requires a sensible half-day length and at least one working day", () => {
-    expect(scheduleSchema.safeParse({ ...valid, halfDayMinutes: 15 }).success).toBe(false);
-    expect(scheduleSchema.safeParse({ ...valid, halfDayMinutes: Number.NaN }).success).toBe(false);
+  it("requires at least one working day", () => {
     expect(scheduleSchema.safeParse({ ...valid, workingDays: [] }).success).toBe(false);
+  });
+
+  it("drops a half-day length sent by older apps, since it follows the daily hours", () => {
+    const parsed = scheduleSchema.safeParse({ ...valid, halfDayMinutes: 300 });
+    expect(parsed.success && "halfDayMinutes" in parsed.data).toBe(false);
   });
 });
 

@@ -14,7 +14,6 @@ import {
 
 export interface ScheduleLike {
   expectedDailyMinutes: number;
-  halfDayMinutes: number;
   workingDays: string;
   lateAfterMinutes?: number | null;
 }
@@ -80,7 +79,6 @@ export function buildDayRows(params: {
       outMinutes: record?.outMinutes,
       expectedDailyMinutes: schedule.expectedDailyMinutes,
       isHalfDay: record?.isHalfDay,
-      halfDayMinutes: schedule.halfDayMinutes,
       leaveType,
       trackingStartKey: params.trackingStartKey,
     });

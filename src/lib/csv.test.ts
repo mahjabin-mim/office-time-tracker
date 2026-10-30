@@ -31,7 +31,7 @@ describe("rowsToCsv", () => {
       { date: dateKeyToDate("2026-10-21"), entryMinutes: null, outMinutes: null, isHalfDay: false, leaveType: "sick" },
       { date: dateKeyToDate("2026-10-22"), entryMinutes: 540, outMinutes: 1095, isHalfDay: false, leaveType: null },
     ],
-    schedule: { expectedDailyMinutes: 540, halfDayMinutes: 270, workingDays: "0,1,2,3,4" },
+    schedule: { expectedDailyMinutes: 540, workingDays: "0,1,2,3,4" },
     now,
   });
   const lines = rowsToCsv(rows).trimEnd().split("\r\n");
