@@ -220,3 +220,7 @@ project.
 
 The Vercel build (`vercel.json`) runs `prisma db push` before `next build`, so schema changes reach the
 production database on each deploy. It refuses destructive changes, so those need a manual `npm run db:push`.
+
+Vercel skips a build when nothing outside `ios/` and `android/` changed since the branch's last
+deployment (`VERCEL_GIT_PREVIOUS_SHA`), so pushing several commits at once still deploys the website
+changes among them even when the newest commit only touches an app.
