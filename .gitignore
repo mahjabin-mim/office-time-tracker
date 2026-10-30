@@ -12,3 +12,14 @@ prisma/dev.db-journal
 *.tsbuildinfo
 .idea
 coverage
+
+# Native apps: signing keys and local build output never belong in git
+*.keystore
+*.jks
+signing-key-passwords.txt
+*.apk
+*.aab
+local.properties
+.gradle
+xcuserdata
+DerivedData

@@ -72,7 +72,8 @@ Track daily office entry/out times and see your monthly worked-time balance at a
 - **Google sign-in**, with linking/unlinking from Settings → Sign-in methods
 - **Forgot password**: emails a single-use reset link that expires after an hour
 - **Account deletion** from Settings → Delete account (removes the user, schedule, and all attendance)
-- **Mobile apps**: an Android app (download from the site) and iPhone/iPad via Add to Home Screen
+- **Mobile apps**: an Android app (download from the site), a native SwiftUI iPhone app (`ios/`),
+  and iPhone/iPad via Add to Home Screen
 - Light/dark themes, installable PWA, and animations that respect the OS "reduce motion" setting
 
 ## Google sign-in
@@ -120,9 +121,9 @@ the "time to leave" reminder also fires on time from the page itself.
   the latest GitHub release. The app launches with `?source=app`, which hides the site's
   "Get the mobile app" links inside it. `public/.well-known/assetlinks.json` holds the signing
   key's fingerprint so Android shows it without a browser bar.
-- **iPhone/iPad**: Safari → Share → Add to Home Screen. It runs full screen as a home-screen web
-  app (detected via `navigator.standalone`), and push reminders work on iOS 16.4+. A native App
-  Store build would need Xcode and a paid Apple Developer account.
+- **iPhone/iPad (web)**: Safari → Share → Add to Home Screen. It runs full screen as a home-screen
+  web app (detected via `navigator.standalone`), and push reminders work on iOS 16.4+.
+- **iPhone/iPad (native)**: a SwiftUI app in `ios/` (iOS 17+). See [Native iOS app](#native-ios-app).
 
 To publish a new Android version, rebuild it (see the separate `office-time-tracker-android`
 project) and attach it to a new release:
@@ -130,6 +131,42 @@ project) and attach it to a new release:
 ```bash
 gh release create v1.0.2 OfficeTimeTracker.apk --title "Android app 1.0.2" --notes "…"
 ```
+
+### Native iOS app
+
+`ios/` holds a native SwiftUI app with Today (one-tap clock in/out, extra hours), Monthly, Yearly
+and Settings screens. It talks to the JSON API under `/api/mobile/*` (`src/app/api/mobile`),
+which runs the same rules as the website through `src/lib/attendance-service.ts` and
+`src/lib/account-service.ts`. The app signs in with a bearer token (`src/lib/mobile-api.ts`)
+instead of the session cookie. That token is revoked the same way, by a password change or
+"Log out of all devices".
+
+Reminders are local notifications scheduled on the phone each time the app loads, using the same
+rules and timings as the push reminders. Real push would need APNs and a paid developer account.
+Google sign-in, password changes and data export open the website.
+
+To install it on your own iPhone with a free Apple ID:
+
+1. Install Xcode from the App Store, then `brew install xcodegen`.
+2. Generate and open the project:
+
+   ```bash
+   cd ios && xcodegen && open OfficeTimeTracker.xcodeproj
+   ```
+
+3. In Xcode, open Settings → Accounts and add your Apple ID. Then select the target, go to
+   Signing & Capabilities, and pick your Personal Team. If Xcode says the bundle ID is taken,
+   change it to anything unique.
+4. Connect the iPhone and enable Developer Mode on it (Settings → Privacy & Security). Choose it as
+   the run destination and press Run. The first time, trust the developer profile on the phone
+   under Settings → General → VPN & Device Management.
+
+With a free Apple ID the app stops opening after 7 days. Press Run again to reinstall it; your
+data lives on the server, so nothing is lost. The app uses the live site by default. To use a dev
+server, set `API_BASE_URL` in `ios/project.yml` (for example `http://localhost:3001` in the
+simulator) and run `xcodegen` again.
+
+The `/api/mobile` routes must be deployed before the app can sign in against the live site.
 
 ## Tests
 
