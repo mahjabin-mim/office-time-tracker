@@ -20,9 +20,11 @@ keeps the old launcher component name, so existing home-screen icons keep workin
 - **Reminders**: local notifications with the website's rules and wording (forgot to clock in, time
   to leave, still at work, extra hours still running), rescheduled every time Today loads and
   re-armed after a reboot
+- **Sign-in**: email and password, or Google. Google runs the website's OAuth in a browser tab
+  (`/api/auth/google?app_challenge=…`), which redirects to `officetimetracker://google-auth?code=…`;
+  the app trades that code and its PKCE verifier for a token at `/api/mobile/auth/google`
 
-Not in the app (it links to the website instead): password change, forgot password, Google sign-in,
-data export. Accounts that only use Google need a password from the website first.
+Not in the app (it links to the website instead): password change, forgot password, data export.
 
 ## Requirements
 

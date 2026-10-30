@@ -35,6 +35,11 @@ class TokenStore(context: Context) {
             if (value == null) remove(KEY_USER) else putString(KEY_USER, ApiJson.encodeToString(User.serializer(), value))
         }
 
+    /** The PKCE verifier of a Google sign-in in progress; kept on disk in case the app is stopped while the browser is open. */
+    var pendingVerifier: String?
+        get() = prefs.getString(KEY_VERIFIER, null)
+        set(value) = prefs.edit { if (value == null) remove(KEY_VERIFIER) else putString(KEY_VERIFIER, value) }
+
     /** Stores a new token and returns the new session number. */
     fun start(token: String): Int {
         cachedToken = token
@@ -93,5 +98,6 @@ class TokenStore(context: Context) {
         const val KEY_TOKEN = "token"
         const val KEY_SESSION = "session"
         const val KEY_USER = "user"
+        const val KEY_VERIFIER = "google-verifier"
     }
 }

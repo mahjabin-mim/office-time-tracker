@@ -13,11 +13,22 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.OfficeTimeTracker">
 
+        <!-- singleTask: Google sign-in's redirect comes back to this activity and closes the
+             browser tab on top of it, instead of opening a second copy over the tab. -->
         <activity
             android:name=".MainActivity"
-            android:exported="false"
-            android:launchMode="singleTop"
-            android:windowSoftInputMode="adjustResize" />
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="google-auth"
+                    android:scheme="officetimetracker" />
+            </intent-filter>
+        </activity>
 
         <!-- Keeps the Trusted Web Activity's launcher component name, so home-screen icons from
              the old app keep working after this version installs over it. -->

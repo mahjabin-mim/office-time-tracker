@@ -60,6 +60,17 @@ class Api(baseUrl: String, private val tokens: TokenStore) {
             authenticated = false,
         )
 
+    /** Trades the code from the Google sign-in redirect, with its PKCE verifier, for a token. */
+    suspend fun googleSignIn(code: String, verifier: String): AuthResponse =
+        send(
+            "POST", "auth/google", AuthResponse.serializer(),
+            body = buildJsonObject {
+                put("code", code)
+                put("verifier", verifier)
+            },
+            authenticated = false,
+        )
+
     suspend fun dashboard(): DashboardResponse = send("GET", "dashboard", DashboardResponse.serializer())
 
     /** [month] is 0-indexed, like everywhere else in the API. */

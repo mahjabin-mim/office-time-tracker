@@ -1,8 +1,12 @@
 package app.vercel.officetimetracker.ui.auth
 
+import android.content.ActivityNotFoundException
+import android.net.Uri
+import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,7 +24,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
@@ -38,6 +44,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -47,9 +54,11 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.vercel.officetimetracker.R
 import app.vercel.officetimetracker.data.ApiException
 import app.vercel.officetimetracker.data.AppContainer
+import app.vercel.officetimetracker.data.GoogleSignIn
 import app.vercel.officetimetracker.ui.components.InlineError
 import kotlinx.coroutines.launch
 import java.time.ZoneId
@@ -67,12 +76,28 @@ fun AuthScreen(app: AppContainer) {
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
     var fieldErrors by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
+    val context = LocalContext.current
+    val google by app.googleSignIn.collectAsStateWithLifecycle()
+    val googleWorking = google is GoogleSignIn.Working
+    val shownError = error ?: (google as? GoogleSignIn.Failed)?.message
+
+    fun continueWithGoogle() {
+        error = null
+        fieldErrors = emptyMap()
+        app.clearGoogleSignInError()
+        try {
+            CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context, Uri.parse(app.googleSignInUrl()))
+        } catch (e: ActivityNotFoundException) {
+            error = "Install a web browser to sign in with Google."
+        }
+    }
 
     fun submit() {
-        if (busy) return
+        if (busy || googleWorking) return
         busy = true
         error = null
         fieldErrors = emptyMap()
+        app.clearGoogleSignInError()
         scope.launch {
             try {
                 val response = if (signup) {
@@ -125,12 +150,13 @@ fun AuthScreen(app: AppContainer) {
                                 signup = isSignup
                                 error = null
                                 fieldErrors = emptyMap()
+                                app.clearGoogleSignInError()
                             },
                             shape = SegmentedButtonDefaults.itemShape(index, 2),
                         ) { Text(label) }
                     }
                 }
-                error?.let { InlineError(it) }
+                shownError?.let { InlineError(it) }
                 if (signup) {
                     AuthField(name, { name = it }, "Full name", fieldErrors["name"])
                 }
@@ -149,7 +175,7 @@ fun AuthScreen(app: AppContainer) {
                 }
                 Button(
                     onClick = ::submit,
-                    enabled = !busy,
+                    enabled = !busy && !googleWorking,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(52.dp),
@@ -160,18 +186,34 @@ fun AuthScreen(app: AppContainer) {
                         Text(if (signup) "Create account" else "Log in")
                     }
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                    Text(
+                        "or",
+                        Modifier.padding(horizontal = 12.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    HorizontalDivider(Modifier.weight(1f), color = MaterialTheme.colorScheme.outlineVariant)
+                }
+                OutlinedButton(
+                    onClick = ::continueWithGoogle,
+                    enabled = !busy && !googleWorking,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp),
+                ) {
+                    if (googleWorking) {
+                        CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text("Continue with Google")
+                    }
+                }
                 if (!signup) {
                     TextButton(onClick = { uri.openUri("${app.websiteUrl}/forgot-password") }, modifier = Modifier.align(Alignment.CenterHorizontally)) {
                         Text("Forgot password?")
                     }
                 }
-                Text(
-                    "Signed up with Google? Add a password on the website (Settings → Password), then log in here with your email.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
     }
