@@ -19,6 +19,7 @@ coverage
 signing-key-passwords.txt
 *.apk
 *.aab
+*.ipa
 local.properties
 .gradle
 xcuserdata

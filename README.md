@@ -145,7 +145,20 @@ Reminders are local notifications scheduled on the phone each time the app loads
 rules and timings as the push reminders. Real push would need APNs and a paid developer account.
 Google sign-in, password changes and data export open the website.
 
-To install it on your own iPhone with a free Apple ID:
+iPhones don't install apps from a downloaded file the way Android installs an APK. Every app
+has to be signed for your Apple ID, so there are two free ways to install it.
+
+**Without Xcode: the `.ipa` file and Sideloadly.** The `iOS` GitHub Actions workflow builds an
+unsigned `OfficeTimeTracker.ipa` and keeps it as the run's `OfficeTimeTracker-ipa` artifact
+(`gh run download <run-id> -n OfficeTimeTracker-ipa`).
+
+1. Install [Sideloadly](https://sideloadly.io) on your Mac and connect the iPhone with a cable.
+2. Drag the `.ipa` into Sideloadly, enter your Apple ID and press Start. Sideloadly signs the app
+   with your Apple ID and installs it.
+3. On the iPhone, enable Developer Mode (Settings → Privacy & Security) and trust your Apple ID
+   under Settings → General → VPN & Device Management.
+
+**With Xcode:**
 
 1. Install Xcode from the App Store, then `brew install xcodegen`.
 2. Generate and open the project:
@@ -161,8 +174,8 @@ To install it on your own iPhone with a free Apple ID:
    the run destination and press Run. The first time, trust the developer profile on the phone
    under Settings → General → VPN & Device Management.
 
-With a free Apple ID the app stops opening after 7 days. Press Run again to reinstall it; your
-data lives on the server, so nothing is lost. The app uses the live site by default. To use a dev
+With a free Apple ID the app stops opening after 7 days. Install it again the same way (Sideloadly
+or Run in Xcode). Your data lives on the server, so nothing is lost. The app uses the live site by default. To use a dev
 server, set `API_BASE_URL` in `ios/project.yml` (for example `http://localhost:3001` in the
 simulator) and run `xcodegen` again.
 
