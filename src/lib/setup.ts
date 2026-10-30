@@ -25,6 +25,19 @@ export function scheduleFromSetup(
   };
 }
 
+/**
+ * Whether the user still has to choose their working schedule; nothing can be recorded until they
+ * do. New accounts are flagged when they're created. Older accounts count as set up once their
+ * schedule has been saved: Prisma stamps both times alike on create, and every save moves
+ * updatedAt, so equal times mean the default schedule was never touched.
+ */
+export function needsWorkdaySetup(
+  user: { needsSetup: boolean },
+  schedule: { createdAt: Date; updatedAt: Date } | null
+): boolean {
+  return user.needsSetup || !schedule || schedule.updatedAt.getTime() === schedule.createdAt.getTime();
+}
+
 /** The "late after" time offered first: half an hour after the work start. */
 export function suggestedLateAfter(workStartMinutes: number): number {
   return Math.min(workStartMinutes + 30, 1439);

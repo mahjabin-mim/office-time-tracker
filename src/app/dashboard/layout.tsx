@@ -1,5 +1,6 @@
+import { redirect } from "next/navigation";
 import { Clock3 } from "lucide-react";
-import { requireCurrentUser } from "@/lib/data";
+import { requireCurrentUser, userNeedsSetup } from "@/lib/data";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { MobileTabBar } from "@/components/dashboard/MobileTabBar";
 import { UserMenu } from "@/components/dashboard/UserMenu";
@@ -10,6 +11,8 @@ import { AuroraBackground } from "@/components/ui/AuroraBackground";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await requireCurrentUser();
+  // Nothing can be recorded on a schedule the user didn't choose, so every page waits for setup.
+  if (await userNeedsSetup(user.id)) redirect("/welcome");
 
   return (
     <div className="relative flex min-h-screen">

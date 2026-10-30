@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { clockToMinutes, dateKeyToDate, getZonedNow } from "@/lib/time";
 import { attendanceSchema, extraHoursSchema } from "@/lib/validation";
 import { settleExtraSessions } from "@/lib/extra";
+import { userNeedsSetup } from "@/lib/data";
 
 /** Shared by the web Server Actions and the mobile API, so both apply the same rules. */
 export type AttendanceResult = {
@@ -20,6 +21,13 @@ function fieldErrorsFrom(issues: { path: (string | number)[]; message: string }[
   return fieldErrors;
 }
 
+/** Nothing is recorded until the user has chosen their own schedule, so balances never use the default. */
+async function setupMissing(userId: string): Promise<AttendanceResult> {
+  return (await userNeedsSetup(userId))
+    ? { error: "Set your working days and hours in Settings before recording time." }
+    : null;
+}
+
 async function getNowForUser(userId: string) {
   const user = await db.user.findUnique({ where: { id: userId }, select: { timezone: true } });
   return getZonedNow(user?.timezone);
@@ -35,6 +43,8 @@ export async function saveAttendance(
     isHalfDay: boolean;
   }
 ): Promise<AttendanceResult> {
+  const missing = await setupMissing(userId);
+  if (missing) return missing;
   const parsed = attendanceSchema.safeParse(raw);
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error.issues) };
 
@@ -62,6 +72,8 @@ export async function saveAttendance(
 
 /** One-tap clock: records the current time as today's entry, or as its out time once clocked in. */
 export async function clockAttendance(userId: string): Promise<AttendanceResult> {
+  const missing = await setupMissing(userId);
+  if (missing) return missing;
   const now = await getNowForUser(userId);
   const where = { userId_date: { userId, date: now.date } };
   const today = await db.attendance.findUnique({ where });
@@ -90,6 +102,8 @@ export async function saveExtraHours(
   userId: string,
   raw: { date: string; extraEntryTime: string; extraOutTime: string }
 ): Promise<AttendanceResult> {
+  const missing = await setupMissing(userId);
+  if (missing) return missing;
   const parsed = extraHoursSchema.safeParse(raw);
   if (!parsed.success) return { fieldErrors: fieldErrorsFrom(parsed.error.issues) };
 
@@ -126,6 +140,8 @@ export async function clearExtraHours(userId: string, dateKey: string): Promise<
 
 /** One-tap clock for extra hours: starts today's extra session, or ends it once it is running. */
 export async function clockExtraHours(userId: string): Promise<AttendanceResult> {
+  const missing = await setupMissing(userId);
+  if (missing) return missing;
   const now = await getNowForUser(userId);
   await settleExtraSessions(userId, now);
   const where = { userId_date: { userId, date: now.date } };

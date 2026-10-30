@@ -78,9 +78,10 @@ export const setupSchema = z.object({
     .max(1440, "A workday can't be longer than 24 hours"),
   lateAfterMinutes: z.number().int().min(0).max(1439).nullable(),
   timeFormat: z.enum(["12h", "24h"]),
-  remindClockIn: z.boolean(),
-  remindLeave: z.boolean(),
-  remindClockOut: z.boolean(),
+  // Optional: only sent when notifications are on for the device doing the setup.
+  reminders: z
+    .object({ remindClockIn: z.boolean(), remindLeave: z.boolean(), remindClockOut: z.boolean() })
+    .nullable(),
 });
 
 export type SetupChoices = z.infer<typeof setupSchema>;

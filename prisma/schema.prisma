@@ -16,13 +16,14 @@ model User {
   timeFormat     String   @default("12h") // "12h" | "24h"
   theme          String   @default("system") // "light" | "dark" | "system"
   timezone       String? // IANA zone detected from the browser, e.g. "Asia/Dhaka"
+  /// Reminders start off; people choose them in setup or Settings once notifications are on.
   remindClockIn  Boolean  @default(false)
-  remindLeave    Boolean  @default(true)
-  remindClockOut Boolean  @default(true)
+  remindLeave    Boolean  @default(false)
+  remindClockOut Boolean  @default(false)
   /// Stamped into session cookies; bumping it signs the user out on every device.
   sessionVersion Int      @default(0)
-  /// New accounts start true and see the "Set up your workday" screen until they finish it or
-  /// save a schedule. Accounts made before that screen existed default to false.
+  /// New accounts start true and can't record time until they finish the "Set up your workday"
+  /// screen or save a schedule in the apps. Older accounts default to false (see lib/setup).
   needsSetup     Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

@@ -54,8 +54,6 @@ export async function updateScheduleAction(
     create: { userId, ...parsed.data, workingDays: parsed.data.workingDays.join(",") },
     update: { ...parsed.data, workingDays: parsed.data.workingDays.join(",") },
   });
-  // Choosing a schedule here counts as setting up, so the setup screen stops being offered.
-  await db.user.updateMany({ where: { id: userId, needsSetup: true }, data: { needsSetup: false } });
 
   revalidatePath("/dashboard");
   revalidatePath("/dashboard/monthly");

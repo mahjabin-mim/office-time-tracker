@@ -16,7 +16,6 @@ import { RecentAttendanceList } from "@/components/dashboard/RecentAttendanceLis
 import { Reveal } from "@/components/ui/Reveal";
 import { AnimatedNumber } from "@/components/ui/AnimatedNumber";
 import { GetAppBanner } from "@/components/app/GetAppBanner";
-import { FinishSetupCard } from "@/components/dashboard/FinishSetupCard";
 
 export default async function DashboardPage() {
   const user = await requireCurrentUser();
@@ -34,7 +33,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-8">
-      {user.needsSetup && <FinishSetupCard />}
       <GetAppBanner />
       <Reveal>
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">

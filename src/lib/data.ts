@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { getSession } from "@/lib/session";
 import { buildDayRows, type DayRow } from "@/lib/calendar";
 import { settleExtraSessions } from "@/lib/extra";
+import { needsWorkdaySetup } from "@/lib/setup";
 import { DEFAULT_HALF_DAY_MINUTES, addDays, getZonedNow } from "@/lib/time";
 import { redirect } from "next/navigation";
 import type { User, WorkSchedule } from "@prisma/client";
@@ -32,6 +33,15 @@ export const DEFAULT_SCHEDULE = {
   workEndMinutes: 1140,
   workingDays: "0,1,2,3,4",
 };
+
+/** Whether the user must still choose their schedule before using the dashboard or recording. */
+export async function userNeedsSetup(userId: string): Promise<boolean> {
+  const user = await db.user.findUnique({
+    where: { id: userId },
+    select: { needsSetup: true, schedule: { select: { createdAt: true, updatedAt: true } } },
+  });
+  return !user || needsWorkdaySetup(user, user.schedule);
+}
 
 export async function getOrCreateSchedule(userId: string): Promise<WorkSchedule> {
   const existing = await db.workSchedule.findUnique({ where: { userId } });

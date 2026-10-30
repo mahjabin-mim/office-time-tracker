@@ -82,7 +82,7 @@ export const PATCH = withMobileUser(async (req, user) => {
     const parsed = scheduleSchema.safeParse(body.schedule);
     if (!parsed.success) return json({ fieldErrors: firstIssues(parsed.error) }, 422);
     Object.assign(scheduleData, parsed.data, { workingDays: parsed.data.workingDays.join(",") });
-    // Choosing a schedule in the app counts as setting up, so the website won't ask again.
+    // Choosing a schedule in the app counts as setting up, so recording time is allowed.
     if (user.needsSetup) userData.needsSetup = false;
   }
 

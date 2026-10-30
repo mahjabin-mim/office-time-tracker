@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
-import Link from "next/link";
 import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { logoutAction } from "@/lib/actions/auth";
 import { completeSetupAction } from "@/lib/actions/setup";
 import {
   SETUP_DAY_PRESETS,
@@ -11,17 +11,30 @@ import {
   scheduleFromSetup,
   suggestedLateAfter,
 } from "@/lib/setup";
-import { REMINDER_PREFS } from "@/components/settings/ReminderSettings";
+import {
+  DeviceNotifications,
+  REMINDER_PREFS,
+  ReminderOption,
+  RemindersLockedNote,
+  type DeviceState,
+  type ReminderPrefs,
+} from "@/components/settings/ReminderSettings";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Alert } from "@/components/ui/Alert";
 import { cn } from "@/lib/cn";
 import { WEEKDAYS, clockToMinutes, minutesToClock, minutesToDuration, type TimeFormat } from "@/lib/time";
 
-type Reminders = Record<(typeof REMINDER_PREFS)[number]["name"], boolean>;
-
-/** The two-step "Set up your workday" screen new accounts see once, before the dashboard. */
-export function WorkdaySetup({ firstName }: { firstName: string }) {
+/** The two-step "Set up your workday" screen that has to be finished before the dashboard opens. */
+export function WorkdaySetup({
+  firstName,
+  vapidPublicKey,
+  savedReminders,
+}: {
+  firstName: string;
+  vapidPublicKey: string | null;
+  savedReminders: ReminderPrefs;
+}) {
   const [step, setStep] = useState<1 | 2>(1);
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [customDays, setCustomDays] = useState<number[]>([]);
@@ -29,21 +42,19 @@ export function WorkdaySetup({ firstName }: { firstName: string }) {
   const [otherStart, setOtherStart] = useState<number | null>(null);
   const [hoursChoice, setHoursChoice] = useState<number | "other" | null>(null);
   const [otherHours, setOtherHours] = useState("");
-  const [lateChoice, setLateChoice] = useState<"off" | "suggested" | "other">("off");
+  const [lateChoice, setLateChoice] = useState<"off" | "suggested" | "other" | null>(null);
   const [otherLate, setOtherLate] = useState<number | null>(null);
-  const [timeFormat, setTimeFormat] = useState<TimeFormat>("12h");
-  const [reminders, setReminders] = useState<Reminders>({
-    remindClockIn: false,
-    remindLeave: false,
-    remindClockOut: false,
-  });
+  const [timeFormat, setTimeFormat] = useState<TimeFormat | null>(null);
+  const [deviceFormat, setDeviceFormat] = useState<TimeFormat>("12h");
+  const [device, setDevice] = useState<DeviceState>("checking");
+  const [reminders, setReminders] = useState<ReminderPrefs>(savedReminders);
   const [error, setError] = useState<string | null>(null);
   const [saving, startSaving] = useTransition();
 
-  // Start from the clock style this device already uses.
+  // Times are shown in this device's clock style until the user picks one.
   useEffect(() => {
     const hourCycle = new Intl.DateTimeFormat(undefined, { hour: "numeric" }).resolvedOptions().hourCycle;
-    if (hourCycle === "h23" || hourCycle === "h24") setTimeFormat("24h");
+    if (hourCycle === "h23" || hourCycle === "h24") setDeviceFormat("24h");
   }, []);
 
   const workingDays: number[] =
@@ -65,15 +76,18 @@ export function WorkdaySetup({ firstName }: { firstName: string }) {
       ? scheduleFromSetup({ workingDays, workStartMinutes, expectedDailyMinutes })
       : null;
   const lateAfterMinutes =
-    lateChoice === "off" || workStartMinutes == null
-      ? null
-      : lateChoice === "suggested"
+    lateChoice === "suggested" && workStartMinutes != null
       ? suggestedLateAfter(workStartMinutes)
-      : otherLate;
-  const clock = (minutes: number) => minutesToClock(minutes, timeFormat);
+      : lateChoice === "other"
+      ? otherLate
+      : null;
+  // Every question needs an answer; "Don't track" counts as one.
+  const stepTwoDone =
+    lateChoice != null && (lateChoice !== "other" || otherLate != null) && timeFormat != null;
+  const clock = (minutes: number) => minutesToClock(minutes, timeFormat ?? deviceFormat);
 
   function finish() {
-    if (!schedule || (lateChoice === "other" && otherLate == null)) return;
+    if (!schedule || !stepTwoDone || !timeFormat) return;
     setError(null);
     startSaving(async () => {
       const result = await completeSetupAction({
@@ -82,7 +96,8 @@ export function WorkdaySetup({ firstName }: { firstName: string }) {
         expectedDailyMinutes: schedule.expectedDailyMinutes,
         lateAfterMinutes,
         timeFormat,
-        ...reminders,
+        // Reminders can only be chosen once notifications are on; otherwise they're left as they are.
+        reminders: device === "on" ? reminders : null,
       });
       if (result?.error) setError(result.error);
     });
@@ -94,20 +109,22 @@ export function WorkdaySetup({ firstName }: { firstName: string }) {
         <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
           Step {step} of 2
         </p>
-        <Link
-          href="/dashboard"
-          className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
-        >
-          Skip for now
-        </Link>
+        <form action={logoutAction}>
+          <button
+            type="submit"
+            className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            Log out
+          </button>
+        </form>
       </div>
 
       {step === 1 ? (
         <>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight">Set up your workday</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Hi {firstName}, this decides your expected hours and daily balance. It takes a few
-            seconds.
+            Hi {firstName}, this decides your expected hours and daily balance. Choose yours before
+            you start recording time; it takes a few seconds.
           </p>
 
           <div className="mt-6 space-y-6">
@@ -218,9 +235,10 @@ export function WorkdaySetup({ firstName }: { firstName: string }) {
         </>
       ) : (
         <>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">A few extras</h1>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">Almost done</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            All optional. You can change any of this later in Settings.
+            Answer the first two to finish; reminders are optional. You can change all of this later
+            in Settings.
           </p>
 
           <div className="mt-6 space-y-6">
@@ -257,29 +275,23 @@ export function WorkdaySetup({ firstName }: { firstName: string }) {
             </Question>
 
             <div>
-              <p className="mb-2 text-sm font-medium">Remind me</p>
-              <div className="space-y-2">
-                {REMINDER_PREFS.map((pref) => (
-                  <label
-                    key={pref.name}
-                    className="flex cursor-pointer items-start gap-3 rounded-xl border border-input px-3.5 py-3 transition-colors hover:bg-muted/50 has-[:checked]:border-brand-600/40 has-[:checked]:bg-brand-600/[0.06]"
-                  >
-                    <input
-                      type="checkbox"
+              <p className="mb-2 text-sm font-medium">
+                Reminders <span className="font-normal text-muted-foreground">· optional</span>
+              </p>
+              <div className="space-y-3">
+                <DeviceNotifications vapidPublicKey={vapidPublicKey} onChange={setDevice} />
+                <RemindersLockedNote device={device} />
+                <fieldset disabled={device !== "on"} className="group min-w-0 space-y-2 disabled:opacity-50">
+                  {REMINDER_PREFS.map((pref) => (
+                    <ReminderOption
+                      key={pref.name}
+                      pref={pref}
                       checked={reminders[pref.name]}
                       onChange={(e) => setReminders((r) => ({ ...r, [pref.name]: e.target.checked }))}
-                      className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer accent-brand-600"
                     />
-                    <span>
-                      <span className="block text-sm font-medium">{pref.title}</span>
-                      <span className="block text-xs text-muted-foreground">{pref.description}</span>
-                    </span>
-                  </label>
-                ))}
+                  ))}
+                </fieldset>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">
-                To get them on this device, turn on notifications in Settings → Reminders.
-              </p>
             </div>
           </div>
 
@@ -298,7 +310,7 @@ export function WorkdaySetup({ firstName }: { firstName: string }) {
               className="flex-1"
               size="lg"
               onClick={finish}
-              disabled={saving || (lateChoice === "other" && otherLate == null)}
+              disabled={saving || !stepTwoDone}
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}
               {saving ? "Saving…" : "Finish setup"}

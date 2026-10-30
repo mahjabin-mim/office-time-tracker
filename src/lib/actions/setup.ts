@@ -9,13 +9,13 @@ import { setupSchema, type SetupChoices } from "@/lib/validation";
 
 export type SetupState = { error?: string } | null;
 
-/** Saves the "Set up your workday" screen in one go, then opens the dashboard. */
+/** Saves the "Set up your workday" screen in one go, which unlocks recording, then opens the dashboard. */
 export async function completeSetupAction(choices: SetupChoices): Promise<SetupState> {
   const userId = await requireUserId();
 
   const parsed = setupSchema.safeParse(choices);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check your answers" };
-  const { lateAfterMinutes, timeFormat, remindClockIn, remindLeave, remindClockOut } = parsed.data;
+  const { lateAfterMinutes, timeFormat, reminders } = parsed.data;
   const schedule = { ...scheduleFromSetup(parsed.data), lateAfterMinutes };
 
   await db.$transaction([
@@ -26,7 +26,7 @@ export async function completeSetupAction(choices: SetupChoices): Promise<SetupS
     }),
     db.user.update({
       where: { id: userId },
-      data: { timeFormat, remindClockIn, remindLeave, remindClockOut, needsSetup: false },
+      data: { timeFormat, ...reminders, needsSetup: false },
     }),
   ]);
 

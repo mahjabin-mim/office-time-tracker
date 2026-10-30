@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scheduleFromSetup, suggestedLateAfter } from "@/lib/setup";
+import { needsWorkdaySetup, scheduleFromSetup, suggestedLateAfter } from "@/lib/setup";
 import { setupSchema } from "@/lib/validation";
 
 const H = 60;
@@ -29,6 +29,25 @@ describe("scheduleFromSetup", () => {
   });
 });
 
+describe("needsWorkdaySetup", () => {
+  const created = new Date("2026-10-23T07:54:50.463Z");
+  const untouched = { createdAt: created, updatedAt: created };
+  const saved = { createdAt: created, updatedAt: new Date("2026-10-24T09:00:00.000Z") };
+
+  it("holds a new account until it finishes setup", () => {
+    expect(needsWorkdaySetup({ needsSetup: true }, saved)).toBe(true);
+  });
+
+  it("holds an older account whose default schedule was never saved", () => {
+    expect(needsWorkdaySetup({ needsSetup: false }, untouched)).toBe(true);
+    expect(needsWorkdaySetup({ needsSetup: false }, null)).toBe(true);
+  });
+
+  it("lets an account through once its schedule has been saved", () => {
+    expect(needsWorkdaySetup({ needsSetup: false }, saved)).toBe(false);
+  });
+});
+
 describe("suggestedLateAfter", () => {
   it("is half an hour after the start", () => {
     expect(suggestedLateAfter(9 * H)).toBe(9 * H + 30);
@@ -43,9 +62,7 @@ describe("setupSchema", () => {
     expectedDailyMinutes: 9 * H,
     lateAfterMinutes: null,
     timeFormat: "12h",
-    remindClockIn: false,
-    remindLeave: true,
-    remindClockOut: false,
+    reminders: null,
   };
 
   it("accepts a complete setup", () => {

@@ -70,5 +70,5 @@ export async function GET(req: NextRequest) {
   }
 
   await createSession(result.user, true);
-  redirect(result.user.needsSetup ? "/welcome" : "/dashboard");
+  redirect("/dashboard");
 }
