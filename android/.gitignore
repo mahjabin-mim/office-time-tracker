@@ -1,0 +1,14 @@
+.gradle/
+.kotlin/
+build/
+app/build/
+local.properties
+.idea/
+*.iml
+
+# Signing: the key lives with the old Trusted Web Activity project, never in this repo.
+keystore.properties
+*.keystore
+*.jks
+*.apk
+*.aab
