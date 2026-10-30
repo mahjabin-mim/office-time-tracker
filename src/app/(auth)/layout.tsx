@@ -1,6 +1,6 @@
 import { Clock3 } from "lucide-react";
 import { AuthBackground } from "@/components/auth/AuthBackground";
-import { GetAppLinks } from "@/components/app/GetAppLinks";
+import { GetAppButton } from "@/components/app/GetAppButton";
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -20,8 +20,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         <div className="animate-fade-up rounded-3xl border border-border bg-card/90 p-7 shadow-soft backdrop-blur-sm sm:p-9">
           {children}
         </div>
-        <div className="mt-6">
-          <GetAppLinks />
+        <div className="mt-6 flex justify-center">
+          <GetAppButton variant="link" />
         </div>
       </div>
     </div>
