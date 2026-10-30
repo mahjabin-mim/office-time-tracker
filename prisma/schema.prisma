@@ -21,6 +21,9 @@ model User {
   remindClockOut Boolean  @default(true)
   /// Stamped into session cookies; bumping it signs the user out on every device.
   sessionVersion Int      @default(0)
+  /// New accounts start true and see the "Set up your workday" screen until they finish it or
+  /// save a schedule. Accounts made before that screen existed default to false.
+  needsSetup     Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

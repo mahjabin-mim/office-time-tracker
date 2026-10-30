@@ -24,7 +24,7 @@ export async function signupAction(
   if (!("user" in result)) return result;
 
   await createSession(result.user, false);
-  redirect("/dashboard");
+  redirect("/welcome");
 }
 
 export async function loginAction(
@@ -42,7 +42,7 @@ export async function loginAction(
   if (!("user" in result)) return result;
 
   await createSession(result.user, result.remember);
-  redirect("/dashboard");
+  redirect(result.user.needsSetup ? "/welcome" : "/dashboard");
 }
 
 export async function logoutAction() {

@@ -65,6 +65,26 @@ export const scheduleSchema = z.object({
     .min(1, "Select at least one working day"),
 });
 
+/** What the "Set up your workday" screen sends; lib/setup turns it into a schedule. */
+export const setupSchema = z.object({
+  workingDays: z
+    .array(z.number().int().min(0).max(6))
+    .min(1, "Choose the days you work"),
+  workStartMinutes: z.number().int().min(0).max(1439),
+  expectedDailyMinutes: z
+    .number({ invalid_type_error: "Enter your daily hours" })
+    .int()
+    .min(60, "A workday must be at least 1 hour")
+    .max(1440, "A workday can't be longer than 24 hours"),
+  lateAfterMinutes: z.number().int().min(0).max(1439).nullable(),
+  timeFormat: z.enum(["12h", "24h"]),
+  remindClockIn: z.boolean(),
+  remindLeave: z.boolean(),
+  remindClockOut: z.boolean(),
+});
+
+export type SetupChoices = z.infer<typeof setupSchema>;
+
 export const lateEntrySchema = z.object({
   // null turns late-entry tracking off
   lateAfterMinutes: z.number().int().min(0).max(1439).nullable(),

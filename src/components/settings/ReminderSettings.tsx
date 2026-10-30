@@ -14,7 +14,7 @@ import { Alert } from "@/components/ui/Alert";
 
 type DeviceState = "checking" | "unsupported" | "denied" | "off" | "on";
 
-const PREFS = [
+export const REMINDER_PREFS = [
   {
     name: "remindClockIn",
     title: "Forgot to clock in",
@@ -52,7 +52,7 @@ export function ReminderSettings({
   prefs,
 }: {
   vapidPublicKey: string | null;
-  prefs: Record<(typeof PREFS)[number]["name"], boolean>;
+  prefs: Record<(typeof REMINDER_PREFS)[number]["name"], boolean>;
 }) {
   const [device, setDevice] = useState<DeviceState>("checking");
   const [message, setMessage] = useState<{ tone: "success" | "error"; text: string } | null>(null);
@@ -173,7 +173,7 @@ export function ReminderSettings({
 
       <form action={prefsAction} className="space-y-3">
         {prefsState?.success && <Alert variant="success">Reminder preferences saved.</Alert>}
-        {PREFS.map((pref) => (
+        {REMINDER_PREFS.map((pref) => (
           <label
             key={pref.name}
             className="flex cursor-pointer items-start gap-3 rounded-xl border border-input px-3.5 py-3 transition-colors hover:bg-muted/50 has-[:checked]:border-brand-600/40 has-[:checked]:bg-brand-600/[0.06]"

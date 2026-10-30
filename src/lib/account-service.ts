@@ -50,6 +50,7 @@ export async function createPasswordAccount(raw: {
       email: parsed.data.email,
       passwordHash,
       timezone: raw.timezone && isValidTimeZone(raw.timezone) ? raw.timezone : null,
+      needsSetup: true,
       schedule: { create: DEFAULT_SCHEDULE },
     },
   });
@@ -111,6 +112,7 @@ export async function findOrCreateGoogleUser(
           name: profile.name,
           email: profile.email,
           googleId: profile.sub,
+          needsSetup: true,
           schedule: { create: DEFAULT_SCHEDULE },
         },
       });
