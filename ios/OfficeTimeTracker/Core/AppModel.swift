@@ -1,5 +1,9 @@
+import AuthenticationServices
+import CryptoKit
 import Foundation
 import Observation
+// With AuthenticationServices, brings in SwiftUI's WebAuthenticationSession.
+import SwiftUI
 
 /// The signed-in session, shared by every screen.
 @MainActor
@@ -43,6 +47,43 @@ final class AppModel {
         signIn(response)
     }
 
+    /// Google sign-in runs on the website in a browser sheet, which hands back a short-lived code
+    /// through the app's URL scheme. Only this sign-in's `verifier` can redeem it.
+    func loginWithGoogle(using session: WebAuthenticationSession) async throws {
+        let verifier = Self.base64URL(Data((0..<32).map { _ in UInt8.random(in: .min ... .max) }))
+        let challenge = Self.base64URL(Data(SHA256.hash(data: Data(verifier.utf8))))
+        var start = URLComponents(url: api.webURL("api/auth/google"), resolvingAgainstBaseURL: false)!
+        start.queryItems = [URLQueryItem(name: "app_challenge", value: challenge)]
+
+        let callback: URL
+        do {
+            callback = try await session.authenticate(
+                using: start.url!, callbackURLScheme: "officetimetracker", preferredBrowserSession: .shared
+            )
+        } catch let error as ASWebAuthenticationSessionError where error.code == .canceledLogin {
+            throw CancellationError()
+        }
+
+        let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        if let error = items.first(where: { $0.name == "error" })?.value {
+            throw GoogleSignInError(code: error)
+        }
+        guard let code = items.first(where: { $0.name == "code" })?.value else {
+            throw GoogleSignInError(code: "google_failed")
+        }
+        let response: AuthResponse = try await api.send(
+            "POST", "auth/google", body: ["code": code, "verifier": verifier]
+        )
+        signIn(response)
+    }
+
+    private static func base64URL(_ data: Data) -> String {
+        data.base64EncodedString()
+            .replacingOccurrences(of: "+", with: "-")
+            .replacingOccurrences(of: "/", with: "_")
+            .replacingOccurrences(of: "=", with: "")
+    }
+
     private func signIn(_ response: AuthResponse) {
         Keychain.save(response.token, for: Self.tokenAccount)
         token = response.token
@@ -69,5 +110,19 @@ final class AppModel {
         )
         if let response { self.user = response.user }
         return response != nil
+    }
+}
+
+/// Errors the website reports back from Google sign-in (GOOGLE_ERROR_MESSAGES in src/lib/google.ts).
+struct GoogleSignInError: LocalizedError {
+    let code: String
+
+    var errorDescription: String? {
+        switch code {
+        case "google_cancelled": return "Google sign-in was cancelled."
+        case "google_unavailable": return "Google sign-in isn't available right now."
+        case "google_conflict": return "This email is already linked to a different Google account."
+        default: return "Couldn't sign in with Google. Please try again."
+        }
     }
 }

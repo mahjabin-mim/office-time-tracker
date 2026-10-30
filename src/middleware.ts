@@ -8,8 +8,10 @@ async function isAuthenticated(req: NextRequest): Promise<boolean> {
   const token = req.cookies.get(SESSION_COOKIE)?.value;
   if (!token) return false;
   try {
-    await jwtVerify(token, getSessionSecret());
-    return true;
+    const { payload } = await jwtVerify(token, getSessionSecret());
+    // Must agree with getSession(), or a rejected app token would bounce between /login and
+    // /dashboard.
+    return payload.aud === undefined;
   } catch {
     return false;
   }

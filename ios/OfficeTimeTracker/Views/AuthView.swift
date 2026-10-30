@@ -1,3 +1,4 @@
+import AuthenticationServices
 import SwiftUI
 
 struct AuthView: View {
@@ -8,6 +9,7 @@ struct AuthView: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.openURL) private var openURL
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
 
     @State private var mode = Mode.login
     @State private var name = ""
@@ -84,12 +86,30 @@ struct AuthView: View {
                     .disabled(busy || email.isEmpty || password.isEmpty)
                 } footer: {
                     if mode == .login {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Button("Forgot password?") { openURL(app.api.webURL("forgot-password")) }
-                            Text("Signed up with Google? Set a password on the website (Settings → Password), then log in here with your email.")
-                        }
-                        .font(.footnote)
+                        Button("Forgot password?") { openURL(app.api.webURL("forgot-password")) }
+                            .font(.footnote)
                     }
+                }
+
+                Section {
+                    Button(action: continueWithGoogle) {
+                        HStack(spacing: 10) {
+                            Spacer()
+                            Text("G")
+                                .font(.headline.weight(.heavy))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.blue, .red, .yellow, .green],
+                                        startPoint: .topLeading, endPoint: .bottomTrailing
+                                    )
+                                )
+                            Text("Continue with Google").bold()
+                            Spacer()
+                        }
+                    }
+                    .disabled(busy)
+                } footer: {
+                    Text("Signs in to the same account as the website. A new account is created on first use.")
                 }
             }
             .onChange(of: mode) {
@@ -97,6 +117,22 @@ struct AuthView: View {
                 fieldErrors = [:]
             }
             .onSubmit(submit)
+        }
+    }
+
+    private func continueWithGoogle() {
+        guard !busy else { return }
+        busy = true
+        error = nil
+        fieldErrors = [:]
+        Task {
+            defer { busy = false }
+            do {
+                try await app.loginWithGoogle(using: webAuthenticationSession)
+            } catch is CancellationError {
+            } catch {
+                self.error = error.localizedDescription
+            }
         }
     }
 

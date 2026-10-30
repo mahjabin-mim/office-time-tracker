@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server";
 import type { User, WorkSchedule } from "@prisma/client";
 import { db } from "@/lib/db";
 import { getSessionSecret } from "@/lib/session-secret";
+import { sha256Base64Url } from "@/lib/google";
 import { readSessionPayload } from "@/lib/session-payload";
 import type { DayRow } from "@/lib/calendar";
 import type { AttendanceResult } from "@/lib/attendance-service";
@@ -21,6 +22,53 @@ export async function createMobileToken(user: { id: string; sessionVersion: numb
     .setIssuedAt()
     .setExpirationTime(Math.floor(Date.now() / 1000) + MOBILE_MAX_AGE)
     .sign(getSessionSecret());
+}
+
+// Google sign-in runs in a browser sheet, so its result goes back to the app through the app's URL
+// scheme as a short-lived code. The code only redeems with the PKCE verifier the app kept, so an
+// app that intercepts the URL can't use it.
+export const APP_URL_SCHEME = "officetimetracker";
+const APP_CODE_AUDIENCE = "ott-mobile-code";
+const APP_CODE_MAX_AGE = 60 * 5;
+/** A base64url SHA-256, as sent in ?app_challenge= */
+export const APP_CHALLENGE_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
+/** Hands a browser sign-in's result (?code= or ?error=) back to the app that started it. */
+export function appRedirect(params: Record<string, string>): Response {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: `${APP_URL_SCHEME}://google-auth?${new URLSearchParams(params)}`,
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+export async function createAppSignInCode(
+  user: { id: string; sessionVersion: number },
+  challenge: string
+) {
+  return new SignJWT({ userId: user.id, v: user.sessionVersion, ch: challenge })
+    .setProtectedHeader({ alg: "HS256" })
+    .setAudience(APP_CODE_AUDIENCE)
+    .setIssuedAt()
+    .setExpirationTime(Math.floor(Date.now() / 1000) + APP_CODE_MAX_AGE)
+    .sign(getSessionSecret());
+}
+
+/** The user an app sign-in code belongs to, if it's unexpired and the verifier matches. */
+export async function redeemAppSignInCode(code: string, verifier: string): Promise<User | null> {
+  try {
+    const { payload } = await jwtVerify(code, getSessionSecret(), { audience: APP_CODE_AUDIENCE });
+    const session = readSessionPayload(payload);
+    if (!session || typeof payload.ch !== "string") return null;
+    if ((await sha256Base64Url(verifier)) !== payload.ch) return null;
+    const user = await db.user.findUnique({ where: { id: session.userId } });
+    if (!user || user.sessionVersion !== session.version) return null;
+    return user;
+  } catch {
+    return null;
+  }
 }
 
 async function getMobileUser(req: NextRequest): Promise<User | null> {

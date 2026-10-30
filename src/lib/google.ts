@@ -9,6 +9,13 @@ const JWKS = createRemoteJWKSet(new URL("https://www.googleapis.com/oauth2/v3/ce
 export const GOOGLE_OAUTH_COOKIE = "ott_google_oauth";
 export const GOOGLE_CALLBACK_PATH = "/api/auth/google/callback";
 
+/** What the OAuth cookie holds. appChallenge is set when a native app started the sign-in. */
+export type PendingGoogleAuth = {
+  state: string;
+  codeVerifier: string;
+  appChallenge?: string;
+};
+
 export type GoogleProfile = {
   sub: string;
   email: string;
@@ -23,7 +30,7 @@ function randomToken(): string {
   return Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64url");
 }
 
-async function sha256Base64Url(value: string): Promise<string> {
+export async function sha256Base64Url(value: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Buffer.from(digest).toString("base64url");
 }

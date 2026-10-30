@@ -2,6 +2,7 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import type { User } from "@prisma/client";
 import { db } from "@/lib/db";
+import type { GoogleProfile } from "@/lib/google";
 import { DEFAULT_SCHEDULE } from "@/lib/data";
 import { checkLoginAllowed, clearFailedLogins, recordFailedLogin } from "@/lib/login-attempts";
 import { isValidTimeZone } from "@/lib/time";
@@ -90,4 +91,28 @@ export async function verifyPasswordLogin(
 
   await clearFailedLogins(email);
   return { user, remember: parsed.data.remember };
+}
+
+/** The account for a Google sign-in: the one linked to it, or one created or linked by email. */
+export async function findOrCreateGoogleUser(
+  profile: GoogleProfile
+): Promise<{ user: User } | { error: "google_conflict" }> {
+  const linkedUser = await db.user.findUnique({ where: { googleId: profile.sub } });
+  if (linkedUser) return { user: linkedUser };
+
+  const byEmail = await db.user.findUnique({ where: { email: profile.email } });
+  if (byEmail?.googleId) return { error: "google_conflict" };
+
+  // Google has verified this email, so it's safe to link it to an existing password account.
+  const user = byEmail
+    ? await db.user.update({ where: { id: byEmail.id }, data: { googleId: profile.sub } })
+    : await db.user.create({
+        data: {
+          name: profile.name,
+          email: profile.email,
+          googleId: profile.sub,
+          schedule: { create: DEFAULT_SCHEDULE },
+        },
+      });
+  return { user };
 }

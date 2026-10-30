@@ -42,6 +42,9 @@ export async function getSession(): Promise<SessionPayload | null> {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, getSessionSecret());
+    // App tokens and sign-in codes (lib/mobile-api) share the key but carry an audience; none of
+    // them may stand in for a session cookie.
+    if (payload.aud !== undefined) return null;
     return readSessionPayload(payload);
   } catch {
     return null;

@@ -143,7 +143,13 @@ instead of the session cookie. That token is revoked the same way, by a password
 
 Reminders are local notifications scheduled on the phone each time the app loads, using the same
 rules and timings as the push reminders. Real push would need APNs and a paid developer account.
-Google sign-in, password changes and data export open the website.
+Password changes and data export open the website.
+
+**Google sign-in** reuses the website's OAuth flow, so it needs no extra Google Cloud setup. The app
+opens `/api/auth/google?app_challenge=…` in a browser sheet. The callback sends a five-minute
+code back to the app through its `officetimetracker://` URL scheme, and the app trades it at
+`POST /api/mobile/auth/google` for its token. The code only redeems with the PKCE verifier the app
+kept, and no app token or code is ever accepted as a website session cookie.
 
 iPhones don't install apps from a downloaded file the way Android installs an APK. Every app
 has to be signed for your Apple ID, so there are two free ways to install it.
