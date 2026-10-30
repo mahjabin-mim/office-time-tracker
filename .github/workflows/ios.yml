@@ -17,12 +17,25 @@ jobs:
       - name: Generate the Xcode project
         working-directory: ios
         run: xcodegen
-      # A simulator build needs no signing certificate.
-      - name: Build
+      # Unsigned, so it needs no certificate. Sideloadly or AltStore signs it with the installer's
+      # own Apple ID (see "Native iOS app" in the README).
+      - name: Build for iPhone
         working-directory: ios
         run: >
-          xcodebuild build
+          xcodebuild archive
           -project OfficeTimeTracker.xcodeproj
           -scheme OfficeTimeTracker
-          -destination 'generic/platform=iOS Simulator'
+          -destination 'generic/platform=iOS'
+          -archivePath build/OfficeTimeTracker.xcarchive
           CODE_SIGNING_ALLOWED=NO
+      - name: Package the .ipa
+        working-directory: ios/build
+        run: |
+          mkdir Payload
+          cp -R OfficeTimeTracker.xcarchive/Products/Applications/OfficeTimeTracker.app Payload/
+          zip -qry OfficeTimeTracker.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: OfficeTimeTracker-ipa
+          path: ios/build/OfficeTimeTracker.ipa
+          if-no-files-found: error
