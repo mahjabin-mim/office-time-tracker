@@ -1,8 +1,8 @@
 name: iOS
 
 on:
+  # Any branch, so iOS work gets a build before it has a pull request.
   push:
-    branches: [master]
     paths: ["ios/**", ".github/workflows/ios.yml"]
   pull_request:
     paths: ["ios/**", ".github/workflows/ios.yml"]
