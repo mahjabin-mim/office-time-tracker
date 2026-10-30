@@ -1,18 +1,9 @@
 "use server";
 
-import bcrypt from "bcryptjs";
 import { redirect } from "next/navigation";
-import { db } from "@/lib/db";
-import { DEFAULT_SCHEDULE } from "@/lib/data";
+import { createPasswordAccount, verifyPasswordLogin } from "@/lib/account-service";
 import { createSession, destroySession } from "@/lib/session";
-import {
-  checkLoginAllowed,
-  clearFailedLogins,
-  getClientIp,
-  recordFailedLogin,
-} from "@/lib/login-attempts";
-import { isValidTimeZone } from "@/lib/time";
-import { loginSchema, signupSchema } from "@/lib/validation";
+import { getClientIp } from "@/lib/login-attempts";
 
 export type AuthFormState = {
   error?: string;
@@ -23,48 +14,16 @@ export async function signupAction(
   _prevState: AuthFormState,
   formData: FormData
 ): Promise<AuthFormState> {
-  const raw = {
+  const result = await createPasswordAccount({
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
     password: String(formData.get("password") ?? ""),
     confirmPassword: String(formData.get("confirmPassword") ?? ""),
-  };
-
-  const parsed = signupSchema.safeParse(raw);
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const key = issue.path[0];
-      if (typeof key === "string" && !fieldErrors[key]) fieldErrors[key] = issue.message;
-    }
-    return { fieldErrors };
-  }
-
-  const existing = await db.user.findUnique({ where: { email: parsed.data.email } });
-  if (existing) {
-    return {
-      fieldErrors: {
-        email: existing.passwordHash
-          ? "An account with this email already exists"
-          : "This email is registered with Google. Use \"Continue with Google\" instead.",
-      },
-    };
-  }
-
-  const passwordHash = await bcrypt.hash(parsed.data.password, 10);
-  const timezone = String(formData.get("timezone") ?? "");
-
-  const user = await db.user.create({
-    data: {
-      name: parsed.data.name,
-      email: parsed.data.email,
-      passwordHash,
-      timezone: timezone && isValidTimeZone(timezone) ? timezone : null,
-      schedule: { create: DEFAULT_SCHEDULE },
-    },
+    timezone: String(formData.get("timezone") ?? ""),
   });
+  if (!("user" in result)) return result;
 
-  await createSession(user, false);
+  await createSession(result.user, false);
   redirect("/dashboard");
 }
 
@@ -72,51 +31,17 @@ export async function loginAction(
   _prevState: AuthFormState,
   formData: FormData
 ): Promise<AuthFormState> {
-  const raw = {
-    email: String(formData.get("email") ?? ""),
-    password: String(formData.get("password") ?? ""),
-    remember: formData.get("remember") === "on",
-  };
+  const result = await verifyPasswordLogin(
+    {
+      email: String(formData.get("email") ?? ""),
+      password: String(formData.get("password") ?? ""),
+      remember: formData.get("remember") === "on",
+    },
+    await getClientIp()
+  );
+  if (!("user" in result)) return result;
 
-  const parsed = loginSchema.safeParse(raw);
-  if (!parsed.success) {
-    const fieldErrors: Record<string, string> = {};
-    for (const issue of parsed.error.issues) {
-      const key = issue.path[0];
-      if (typeof key === "string" && !fieldErrors[key]) fieldErrors[key] = issue.message;
-    }
-    return { fieldErrors };
-  }
-
-  const { email } = parsed.data;
-  const ip = await getClientIp();
-
-  // Checked before the password, so a locked account can't be probed further.
-  const lock = await checkLoginAllowed(email, ip);
-  if (lock.locked) {
-    const minutes = lock.retryAfterMinutes;
-    return {
-      error: `Too many failed attempts. Try again in ${minutes} minute${minutes === 1 ? "" : "s"}, or reset your password.`,
-    };
-  }
-
-  const user = await db.user.findUnique({ where: { email } });
-  if (!user) {
-    await recordFailedLogin(email, ip);
-    return { error: "Invalid email or password" };
-  }
-  if (!user.passwordHash) {
-    return { error: "This account signs in with Google. Use \"Continue with Google\" instead." };
-  }
-
-  const valid = await bcrypt.compare(parsed.data.password, user.passwordHash);
-  if (!valid) {
-    await recordFailedLogin(email, ip);
-    return { error: "Invalid email or password" };
-  }
-
-  await clearFailedLogins(email);
-  await createSession(user, parsed.data.remember);
+  await createSession(result.user, result.remember);
   redirect("/dashboard");
 }
 
