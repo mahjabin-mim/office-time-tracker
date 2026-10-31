@@ -24,7 +24,6 @@ struct SettingsView: View {
     @State private var remindClockOut = true
     // Schedule
     @State private var expectedMinutes = 540
-    @State private var halfDayMinutes = 270
     @State private var workStart = Fmt.pickerDate(540)
     @State private var workEnd = Fmt.pickerDate(1140)
     @State private var workingDays: Set<Int> = []
@@ -105,10 +104,8 @@ struct SettingsView: View {
             Stepper(value: $expectedMinutes, in: 60...1440, step: 15) {
                 LabeledContent("Daily hours", value: Fmt.duration(expectedMinutes))
             }
-            Stepper(value: $halfDayMinutes, in: 30...1440, step: 15) {
-                LabeledContent("Half day", value: Fmt.duration(halfDayMinutes))
-            }
-            FieldError(message: fieldErrors["halfDayMinutes"])
+            // The server always makes a half day half the daily hours (rounded), so it isn't editable.
+            LabeledContent("Half day", value: Fmt.duration(Int((Double(expectedMinutes) / 2).rounded())))
             DatePicker("Work starts", selection: $workStart, displayedComponents: .hourAndMinute)
             DatePicker("Work ends", selection: $workEnd, displayedComponents: .hourAndMinute)
 
@@ -228,7 +225,6 @@ struct SettingsView: View {
         remindLeave = user.remindLeave
         remindClockOut = user.remindClockOut
         expectedMinutes = schedule.expectedDailyMinutes
-        halfDayMinutes = schedule.halfDayMinutes
         workStart = Fmt.pickerDate(schedule.workStartMinutes)
         workEnd = Fmt.pickerDate(schedule.workEndMinutes)
         workingDays = Set(schedule.workingDays)
@@ -240,7 +236,6 @@ struct SettingsView: View {
         await save([
             "schedule": [
                 "expectedDailyMinutes": expectedMinutes,
-                "halfDayMinutes": halfDayMinutes,
                 "workStartMinutes": Fmt.minutesOfDay(workStart),
                 "workEndMinutes": Fmt.minutesOfDay(workEnd),
                 "workingDays": workingDays.sorted(),
@@ -270,8 +265,10 @@ struct SettingsView: View {
     /// Reminder times depend on the schedule and preferences, so refresh them right away.
     private func rescheduleReminders() async {
         if let data: DashboardResponse = try? await app.api.get("dashboard") {
-            Reminders.schedule(from: data)
+            await Reminders.schedule(from: data)
         }
+        // Turning a reminder on may have just shown the permission prompt.
+        notificationsDenied = await Reminders.isDenied()
     }
 
     private func logoutAll() async {

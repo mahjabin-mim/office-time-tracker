@@ -37,6 +37,5 @@ struct MainTabView: View {
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
         }
-        .task { await Reminders.requestAuthorization() }
     }
 }

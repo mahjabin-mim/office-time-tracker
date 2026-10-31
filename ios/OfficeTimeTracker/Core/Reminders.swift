@@ -24,10 +24,16 @@ enum Reminders {
         center.removeAllPendingNotificationRequests()
     }
 
-    static func schedule(from data: DashboardResponse) {
+    static func schedule(from data: DashboardResponse) async {
         cancelAll()
 
         let user = data.user
+        // Reminders start off, so only ask for permission once one is on. iOS shows the prompt
+        // at most once; after that this just reports the answer.
+        guard user.remindClockIn || user.remindLeave || user.remindClockOut,
+              await requestAuthorization()
+        else { return }
+
         let schedule = data.schedule
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = user.timezone.flatMap(TimeZone.init(identifier:)) ?? .current

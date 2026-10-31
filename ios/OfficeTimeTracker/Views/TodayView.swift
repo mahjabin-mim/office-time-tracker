@@ -281,7 +281,7 @@ struct TodayView: View {
                 data = response
             }
             fetchedAt = Date()
-            if let data { Reminders.schedule(from: data) }
+            if let data { await Reminders.schedule(from: data) }
         }
     }
 
